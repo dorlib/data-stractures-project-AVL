@@ -11,7 +11,8 @@ class AVLNode(object):
 	""" AVL Node
 		--------
 		A class represnting a node in an AVL tree
-		@inv: for each node, node.left.value <= node.value < node.right.value
+		@inv: for each node, left.value <= value < node.right.value # BST
+		@inv: for each node, abs(left.height - right.height) <= 1   # AVL
 		
 		fields
 		------
@@ -25,7 +26,6 @@ class AVLNode(object):
 		help fields
 			height: length of the longest path from self to a leaf @type: int 
 			rank: the number of nodes in the tree which self is its root @type: int
-			balance_factor: left.height - right.height @type: int
 		"""
 	
 	def __init__(self, value):
@@ -40,7 +40,6 @@ class AVLNode(object):
 		self.right = None
 		self.parent = None
 		# help fields
-		self.balance_factor = 0
 		self.height = -1 
 		self.rank = -1
 
@@ -92,27 +91,36 @@ class AVLNode(object):
 		@rtype: int
 		@returns: the balace factor of self, 0 if the node is virtual
 		"""
-		return self.balance_factor
+		right_height = self.getRight().getHeigth()
+		left_height = self.getLeft().getHeigth()
+		return left_height - right_height
 	
 	def setLeft(self, node):
 		"""sets left child without rebalance
 
+		@pre: node.value <= self.value
 		@post: updates help fields
+		@post: delete old right node
 		@type node: AVLNode
 		@param node: a node
 		"""
-		#TODO
-		return None
+		#TODO make sure this is right
+		self.left = node
+		self.updateHeight()
+		
 
 	def setRight(self, node):
 		"""sets right child without rebalance
 
+		@pre: node.value > self.value
 		@post: updates help fields
+		@post: delete old right node
 		@type node: AVLNode
 		@param node: a node
 		"""
-		#TODO
-		return None
+		#TODO make sure this is right
+		self.right = node
+		self.updateHeight()
 
 	def setParent(self, node):
 		"""sets parent and update the parent node.
@@ -142,7 +150,17 @@ class AVLNode(object):
 		"""
 		self.height = h
 
-	def calcHeights(self):
+	def updateHeight(self):
+		"""sets the height based on the height of the left and the right children
+		
+		@pre: childrens heights are updated
+		"""
+		left_height = self.getLeft().getHeight()
+		right_height = self.getRight().getHeight()
+
+		self.setHeight(max(left_height, right_height) + 1)
+
+	def deepHeights(self):
 		"""searches into the tree recursivly, 
 		updates the height at each node.
 
@@ -169,50 +187,64 @@ class AVLNode(object):
 		return self.getHeight()
 
 
+	def deepBalanceFactor(self):
+		"""serches into the tree recursively,
+		updated the height at each node, 
+		and then returns the balance factor
+		
+		@rtype: int
+		@return: balance factor of the tree
+		"""
+		self.deepHeights()
+		return self.getBalanceFactor()
+
+
 	def isRealNode(self):
 		"""returns whether self is not a virtual node 
 
 		@rtype: bool
 		@returns: False if self is a virtual node, True otherwise.
 		"""
-		is_virtual = self.value == None
-		is_virtual &= self.left == None
-		is_virtual &= self.right == None
-		is_virtual &= self.parent == None
-		is_virtual &= self.height == -1
-		is_virtual &= self.rank == -1
-		return not is_virtual
+		return self.value != None
 
 
-	def rebalance(self):
-		"""rebalance the tree after insertion of self"""
-		criminal = self.findCriminal()
-		if criminal == None:
-			return
-		
-		if (criminal.balance_factor == 2):
-			# self.left cannot be None 
-			left_node = self.getLeft()
-			if left_node.getBalanceFactor() == -1:
-				left_node.rotateLeft()
-			self.rotateRight()
-		
-		if (criminal.balance_factor == -2):
-			# self.right cannot be None 
-			right_node = self.getRight()
-			if right_node.getBalanceFactor() == 1:
-				right_node.rotateRight()
-			self.rotateLeft()
-		
-	
-	def findCriminal(self):
-		"""goes over the tree and finds the first criminal above self
-		
-		@rtype: AVLNode
-		@return: the first node with abs(balance_factor) >=2, or None if not found
+	def rebalance(self, is_insert = False):
+		"""rebalance the tree after insertion or deletion of self
+
+		@type is_insert: bool
+		@param is_insert: if rebalance is after insertion
 		"""
-		#TODO
-		return None
+		parent = self.getParent()
+		old_height = parent.getHeight()
+		while parent != None:
+			balance_factor = parent.getBalanceFactor()
+			new_height = parent.getHeight()
+			
+			if old_height == new_height:
+				return
+			
+			else:
+				if (balance_factor == 2):
+					# self.left cannot be None 
+					left_node = self.getLeft()
+					if left_node.getBalanceFactor() == -1:
+						left_node.rotateLeft()
+					self.rotateRight()
+					if is_insert:
+						return
+				
+				elif (balance_factor == -2):
+					# self.right cannot be None 
+					right_node = self.getRight()
+					if right_node.getBalanceFactor() == 1:
+						right_node.rotateRight()
+					self.rotateLeft()
+					if is_insert:
+						return
+				
+				else: # balance_factor < 2
+					parent = parent.getParent()
+			
 
 
 	def rotateLeft(self):
@@ -229,7 +261,11 @@ class AVLNode(object):
 		# rotate
 		self.setRight(childs_left)
 		child.setLeft(self)
-		child.setParent(parent)
+		child.setParent(parent)	
+		
+		# update height fields
+		AVLNode.updateConnectedNodes(parent, child, self)
+
 	
 	"""makes self the right child of self.left"""
 	def rotateRight(self):
@@ -243,8 +279,28 @@ class AVLNode(object):
 		self.setLeft(childs_right)
 		child.setRight(self)
 		child.setParent(parent)
-	
 
+		# update height fields
+		AVLNode.updateConnectedNodes(parent, child, self)
+
+
+	@staticmethod
+	def updateConnectedNodes(node, child, grandchild):
+		"""Updated the height field for three connected nodes
+			parent
+ 			  L> child 
+				  L> grandchild
+
+		@pre: all other nodes have correct height field
+		@post: height fields will be correct for given nodes
+		@type node, child, grandchild: AVLNode
+		@param node, child, grandchild: nodes in order of parantage
+		"""
+		# update bottom up
+		grandchild.updateHeight()
+		child.updateHeight()
+		node.updateHeight()
+	
 
 
 """
