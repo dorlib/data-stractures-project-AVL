@@ -6,4 +6,4 @@ In this project we will implement an ADT of a List while using an AVL tree. </br
 ### Maintainers
 
 - Dor Liberman (dorlib)
-- Afik Ben Shimol
+- Afik Ben Shimol (AfikBenShimol)

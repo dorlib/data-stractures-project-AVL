@@ -6,109 +6,244 @@
 
 
 
-"""A class represnting a node in an AVL tree"""
 
 class AVLNode(object):
-	"""Constructor, you are allowed to add more fields. 
-
-	@type value: str
-	@param value: data of your node
-	"""
+	""" AVL Node
+		--------
+		A class represnting a node in an AVL tree
+		@inv: for each node, node.left.value <= node.value < node.right.value
+		
+		fields
+		------
+			value: data held in node @type: str @default: None
+		
+		pointer fields
+			left: left child of self @type: AVLNode @default: None
+			right: right child of self @type: AVLNode @default: None
+			parent: self is a child of self @type:AVLNode @default: None
+		
+		help fields
+			height: length of the longest path from self to a leaf @type: int 
+			rank: the number of nodes in the tree which self is its root @type: int
+			balance_factor: left.height - right.height @type: int
+		"""
+	
 	def __init__(self, value):
+		"""Constructor, you are allowed to add more fields. 
+
+		@type value: str
+		@param value: data of your node
+		"""
 		self.value = value
+		# pointers
 		self.left = None
 		self.right = None
 		self.parent = None
-		self.height = -1 # Balance factor
+		# help fields
+		self.balance_factor = 0
+		self.height = -1 
+		self.rank = -1
+
+	def getLeft(self):
+		"""returns the left child
+
+		@rtype: AVLNode
+		@returns: the left child of self, None if there is no left child
+		"""
+		return self.left
 		
 
-	"""returns the left child
-	@rtype: AVLNode
-	@returns: the left child of self, None if there is no left child
-	"""
-	def getLeft(self):
-		return None
-
-
-	"""returns the right child
-
-	@rtype: AVLNode
-	@returns: the right child of self, None if there is no right child
-	"""
 	def getRight(self):
-		return None
+		"""returns the right child
 
-	"""returns the parent 
+		@rtype: AVLNode
+		@returns: the right child of self, None if there is no right child
+		"""
+		return self.right
+		
 
-	@rtype: AVLNode
-	@returns: the parent of self, None if there is no parent
-	"""
 	def getParent(self):
-		return None
+		"""returns the parent 
 
-	"""return the value
+		@rtype: AVLNode
+		@returns: the parent of self, None if there is no parent
+		"""
+		return self.parent
 
-	@rtype: str
-	@returns: the value of self, None if the node is virtual
-	"""
 	def getValue(self):
-		return None
+		"""return the value
 
-	"""returns the height
+		@rtype: str
+		@returns: the value of self, None if the node is virtual
+		"""
+		return self.value
 
-	@rtype: int
-	@returns: the height of self, -1 if the node is virtual
-	"""
 	def getHeight(self):
-		return -1
+		"""returns the height (assumes correct field)
 
-	"""sets left child
+		@rtype: int
+		@returns: the height of self, -1 if the node is virtual
+		"""
+		return self.height
 
-	@type node: AVLNode
-	@param node: a node
-	"""
+	def getBalanceFactor(self):
+		"""returns the balance_factor (assumes correct field)
+
+		@rtype: int
+		@returns: the balace factor of self, 0 if the node is virtual
+		"""
+		return self.balance_factor
+	
 	def setLeft(self, node):
+		"""sets left child without rebalance
+
+		@post: updates help fields
+		@type node: AVLNode
+		@param node: a node
+		"""
+		#TODO
 		return None
 
-	"""sets right child
-
-	@type node: AVLNode
-	@param node: a node
-	"""
 	def setRight(self, node):
+		"""sets right child without rebalance
+
+		@post: updates help fields
+		@type node: AVLNode
+		@param node: a node
+		"""
+		#TODO
 		return None
 
-	"""sets parent
-
-	@type node: AVLNode
-	@param node: a node
-	"""
 	def setParent(self, node):
+		"""sets parent and update the parent node.
+		if there were some child where self needs to go, it is deleted
+
+		@post: updated help fields
+		@type node: AVLNode
+		@param node: a node
+		"""
+		#TODO
 		return None
 
-	"""sets value
-
-	@type value: str
-	@param value: data
-	"""
 	def setValue(self, value):
+		"""sets value
+
+		@type value: str
+		@param value: data
+		"""
+		#TODO
 		return None
 
-	"""sets the balance factor of the node
-
-	@type h: int
-	@param h: the height
-	"""
 	def setHeight(self, h):
+		"""sets the height of the node
+
+		@type h: int
+		@param h: the height
+		"""
+		self.height = h
+
+	def calcHeights(self):
+		"""searches into the tree recursivly, 
+		updates the height at each node.
+
+		@rtype: int 
+		@return: height of the node
+		"""
+		# handle virtual nodes		
+		if (not self.isRealNode):
+			return -1
+		
+		# recursivly find height of left and right nodes
+		left_node = self.getLeft()
+		left_height = 0
+		if (left_node != None):
+			left_height = left_node.setHeight()
+		
+		right_node = self.getRight()
+		right_height = 0
+		if (right_node != None):
+			right_height = right_node.setHeight()
+		
+		# set the field
+		self.height = max(right_height, left_height) + 1
+		return self.getHeight()
+
+
+	def isRealNode(self):
+		"""returns whether self is not a virtual node 
+
+		@rtype: bool
+		@returns: False if self is a virtual node, True otherwise.
+		"""
+		is_virtual = self.value == None
+		is_virtual &= self.left == None
+		is_virtual &= self.right == None
+		is_virtual &= self.parent == None
+		is_virtual &= self.height == -1
+		is_virtual &= self.rank == -1
+		return not is_virtual
+
+
+	def rebalance(self):
+		"""rebalance the tree after insertion of self"""
+		criminal = self.findCriminal()
+		if criminal == None:
+			return
+		
+		if (criminal.balance_factor == 2):
+			# self.left cannot be None 
+			left_node = self.getLeft()
+			if left_node.getBalanceFactor() == -1:
+				left_node.rotateLeft()
+			self.rotateRight()
+		
+		if (criminal.balance_factor == -2):
+			# self.right cannot be None 
+			right_node = self.getRight()
+			if right_node.getBalanceFactor() == 1:
+				right_node.rotateRight()
+			self.rotateLeft()
+		
+	
+	def findCriminal(self):
+		"""goes over the tree and finds the first criminal above self
+		
+		@rtype: AVLNode
+		@return: the first node with abs(balance_factor) >=2, or None if not found
+		"""
+		#TODO
 		return None
 
-	"""returns whether self is not a virtual node 
 
-	@rtype: bool
-	@returns: False if self is a virtual node, True otherwise.
-	"""
-	def isRealNode(self):
-		return False
+	def rotateLeft(self):
+		"""makes self the left child of self.right
+		
+		@pre: height and balance factor were correct
+		"""
+		#TODO update help fields
+		# prepare pointers
+		parent = self.getParent()
+		child = self.getRight()
+		childs_left = child.getLeft()
+
+		# rotate
+		self.setRight(childs_left)
+		child.setLeft(self)
+		child.setParent(parent)
+	
+	"""makes self the right child of self.left"""
+	def rotateRight(self):
+		#TODO update help fields
+		# prepare pointers
+		parent = self.getParent()
+		child = self.getLeft()
+		childs_right = child.getRight()
+
+		# rotate
+		self.setLeft(childs_right)
+		child.setRight(self)
+		child.setParent(parent)
+	
 
 
 
