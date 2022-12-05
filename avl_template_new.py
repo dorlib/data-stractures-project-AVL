@@ -6,110 +6,301 @@
 
 
 
-"""A class represnting a node in an AVL tree"""
 
 class AVLNode(object):
-	"""Constructor, you are allowed to add more fields. 
-
-	@type value: str
-	@param value: data of your node
-	"""
+	""" AVL Node
+		--------
+		A class represnting a node in an AVL tree
+		@inv: for each node, left.value <= value < node.right.value # BST
+		@inv: for each node, abs(left.height - right.height) <= 1   # AVL
+		
+		fields
+		------
+			value: data held in node @type: str @default: None
+		
+		pointer fields
+			left: left child of self @type: AVLNode @default: None
+			right: right child of self @type: AVLNode @default: None
+			parent: self is a child of self @type:AVLNode @default: None
+		
+		help fields
+			height: length of the longest path from self to a leaf @type: int 
+			rank: the number of nodes in the tree which self is its root @type: int
+		"""
+	
 	def __init__(self, value):
+		"""Constructor, you are allowed to add more fields. 
+
+		@type value: str
+		@param value: data of your node
+		"""
 		self.value = value
+		# pointers
 		self.left = None
 		self.right = None
 		self.parent = None
-		self.height = -1 # Balance factor
+		# help fields
+		self.height = -1 
+		self.rank = -1
+
+	def getLeft(self):
+		"""returns the left child
+
+		@rtype: AVLNode
+		@returns: the left child of self, None if there is no left child
+		"""
+		return self.left
 		
 
-	"""returns the left child
-	@rtype: AVLNode
-	@returns: the left child of self, None if there is no left child
-	"""
-	def getLeft(self):
-		return None
-
-
-	"""returns the right child
-
-	@rtype: AVLNode
-	@returns: the right child of self, None if there is no right child
-	"""
 	def getRight(self):
-		return None
+		"""returns the right child
 
-	"""returns the parent 
+		@rtype: AVLNode
+		@returns: the right child of self, None if there is no right child
+		"""
+		return self.right
+		
 
-	@rtype: AVLNode
-	@returns: the parent of self, None if there is no parent
-	"""
 	def getParent(self):
-		return None
+		"""returns the parent 
 
-	"""return the value
+		@rtype: AVLNode
+		@returns: the parent of self, None if there is no parent
+		"""
+		return self.parent
 
-	@rtype: str
-	@returns: the value of self, None if the node is virtual
-	"""
 	def getValue(self):
-		return None
+		"""return the value
 
-	"""returns the height
+		@rtype: str
+		@returns: the value of self, None if the node is virtual
+		"""
+		return self.value
 
-	@rtype: int
-	@returns: the height of self, -1 if the node is virtual
-	"""
 	def getHeight(self):
-		return -1
+		"""returns the height (assumes correct field)
 
-	"""sets left child
+		@rtype: int
+		@returns: the height of self, -1 if the node is virtual
+		"""
+		return self.height
 
-	@type node: AVLNode
-	@param node: a node
-	"""
+	def getBalanceFactor(self):
+		"""returns the balance_factor (assumes correct field)
+
+		@rtype: int
+		@returns: the balace factor of self, 0 if the node is virtual
+		"""
+		right_height = self.getRight().getHeigth()
+		left_height = self.getLeft().getHeigth()
+		return left_height - right_height
+	
 	def setLeft(self, node):
-		return None
+		"""sets left child without rebalance
 
-	"""sets right child
+		@pre: node.value <= self.value
+		@post: updates help fields
+		@post: delete old right node
+		@type node: AVLNode
+		@param node: a node
+		"""
+		#TODO make sure this is right
+		self.left = node
+		self.updateHeight()
+		
 
-	@type node: AVLNode
-	@param node: a node
-	"""
 	def setRight(self, node):
-		return None
+		"""sets right child without rebalance
 
-	"""sets parent
+		@pre: node.value > self.value
+		@post: updates help fields
+		@post: delete old right node
+		@type node: AVLNode
+		@param node: a node
+		"""
+		#TODO make sure this is right
+		self.right = node
+		self.updateHeight()
 
-	@type node: AVLNode
-	@param node: a node
-	"""
 	def setParent(self, node):
+		"""sets parent and update the parent node.
+		if there were some child where self needs to go, it is deleted
+
+		@post: updated help fields
+		@type node: AVLNode
+		@param node: a node
+		"""
+		#TODO
 		return None
 
-	"""sets value
-
-	@type value: str
-	@param value: data
-	"""
 	def setValue(self, value):
+		"""sets value
+
+		@type value: str
+		@param value: data
+		"""
+		#TODO
 		return None
 
-	"""sets the balance factor of the node
-
-	@type h: int
-	@param h: the height
-	"""
 	def setHeight(self, h):
-		return None
+		"""sets the height of the node
 
-	"""returns whether self is not a virtual node 
+		@type h: int
+		@param h: the height
+		"""
+		self.height = h
 
-	@rtype: bool
-	@returns: False if self is a virtual node, True otherwise.
-	"""
+	def updateHeight(self):
+		"""sets the height based on the height of the left and the right children
+		
+		@pre: childrens heights are updated
+		"""
+		left_height = self.getLeft().getHeight()
+		right_height = self.getRight().getHeight()
+
+		self.setHeight(max(left_height, right_height) + 1)
+
+	def deepHeights(self):
+		"""searches into the tree recursivly, 
+		updates the height at each node.
+
+		@rtype: int 
+		@return: height of the node
+		"""
+		# handle virtual nodes		
+		if (not self.isRealNode):
+			return -1
+		
+		# recursivly find height of left and right nodes
+		left_node = self.getLeft()
+		left_height = 0
+		if (left_node != None):
+			left_height = left_node.setHeight()
+		
+		right_node = self.getRight()
+		right_height = 0
+		if (right_node != None):
+			right_height = right_node.setHeight()
+		
+		# set the field
+		self.height = max(right_height, left_height) + 1
+		return self.getHeight()
+
+
+	def deepBalanceFactor(self):
+		"""serches into the tree recursively,
+		updated the height at each node, 
+		and then returns the balance factor
+		
+		@rtype: int
+		@return: balance factor of the tree
+		"""
+		self.deepHeights()
+		return self.getBalanceFactor()
+
+
 	def isRealNode(self):
-		return False
+		"""returns whether self is not a virtual node 
 
+		@rtype: bool
+		@returns: False if self is a virtual node, True otherwise.
+		"""
+		return self.value != None
+
+
+	def rebalance(self, is_insert = False):
+		"""rebalance the tree after insertion or deletion of self
+
+		@type is_insert: bool
+		@param is_insert: if rebalance is after insertion
+		"""
+		parent = self.getParent()
+		old_height = parent.getHeight()
+		while parent != None:
+			balance_factor = parent.getBalanceFactor()
+			new_height = parent.getHeight()
+			
+			if old_height == new_height:
+				return
+			
+			else:
+				if (balance_factor == 2):
+					# self.left cannot be None 
+					left_node = self.getLeft()
+					if left_node.getBalanceFactor() == -1:
+						left_node.rotateLeft()
+					self.rotateRight()
+					if is_insert:
+						return
+				
+				elif (balance_factor == -2):
+					# self.right cannot be None 
+					right_node = self.getRight()
+					if right_node.getBalanceFactor() == 1:
+						right_node.rotateRight()
+					self.rotateLeft()
+					if is_insert:
+						return
+				
+				else: # balance_factor < 2
+					parent = parent.getParent()
+			
+
+
+	def rotateLeft(self):
+		"""makes self the left child of self.right
+		
+		@pre: height and balance factor were correct
+		"""
+		#TODO update help fields
+		# prepare pointers
+		parent = self.getParent()
+		child = self.getRight()
+		childs_left = child.getLeft()
+
+		# rotate
+		self.setRight(childs_left)
+		child.setLeft(self)
+		child.setParent(parent)	
+		
+		# update height fields
+		AVLNode.updateConnectedNodes(parent, child, self)
+
+	
+	"""makes self the right child of self.left"""
+	def rotateRight(self):
+		#TODO update help fields
+		# prepare pointers
+		parent = self.getParent()
+		child = self.getLeft()
+		childs_right = child.getRight()
+
+		# rotate
+		self.setLeft(childs_right)
+		child.setRight(self)
+		child.setParent(parent)
+
+		# update height fields
+		AVLNode.updateConnectedNodes(parent, child, self)
+
+
+	@staticmethod
+	def updateConnectedNodes(node, child, grandchild):
+		"""Updated the height field for three connected nodes
+			parent
+ 			  L> child 
+				  L> grandchild
+
+		@pre: all other nodes have correct height field
+		@post: height fields will be correct for given nodes
+		@type node, child, grandchild: AVLNode
+		@param node, child, grandchild: nodes in order of parantage
+		"""
+		# update bottom up
+		grandchild.updateHeight()
+		child.updateHeight()
+		node.updateHeight()
+	
 
 
 """
