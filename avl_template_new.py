@@ -11,37 +11,57 @@ class AVLNode(object):
 	""" AVL Node
 		--------
 		A class represnting a node in an AVL tree
-		@inv: for each node, left.value <= value < node.right.value # BST
 		@inv: for each node, abs(left.height - right.height) <= 1   # AVL
 		
 		fields
 		------
-			value: data held in node @type: str @default: None
+			value: data held in node @type: str
 		
-		pointer fields
-			left: left child of self @type: AVLNode @default: None
-			right: right child of self @type: AVLNode @default: None
-			parent: self is a child of self @type:AVLNode @default: None
-		
-		help fields
-			height: length of the longest path from self to a leaf @type: int 
-			rank: the number of nodes in the tree which self is its root @type: int
+			pointers:
+				left: left child of the node @type: AVLNode \n
+				right: right child of the node @type: AVLNode \n
+				parent: parent of the node @type:AVLNode \n
+			
+			helpers:
+				height: length of the longest path from the node to a leaf @type: int \n
+				size: the number of nodes in the subtree @type: int
 		"""
 	
-	def __init__(self, value):
-		"""Constructor, you are allowed to add more fields. 
+	def __init__(self, value, left, right, height, size, 
+				parent=None):
+		"""Constructor, creates a real node.
+		if left or right are None, inserts virtual nodes instead
 
-		@type value: str
+		@type value: str or None
 		@param value: data of your node
 		"""
 		self.value = value
 		# pointers
-		self.left = None
-		self.right = None
-		self.parent = None
+		self.left = left
+		self.right = right
+		self.parent = parent
 		# help fields
-		self.height = -1 
-		self.rank = -1
+		self.height = height
+		self.size = size
+		# padding with virtual nodes
+		if (value != None):
+			self.padWithVirtuals()
+	
+
+	@staticmethod
+	def virtualNode(parent=None):
+		"""creates a new virtual node assigned with given parent
+		
+		@type parent: AVLNode 
+		@param parent: node to be the parent
+		"""
+		return AVLNode(	value=None,
+						left=None,
+						right=None,
+						height=-1,
+						size=0,
+						parent=parent )
+
 
 	def getLeft(self):
 		"""returns the left child
@@ -59,7 +79,27 @@ class AVLNode(object):
 		@returns: the right child of self, None if there is no right child
 		"""
 		return self.right
-		
+
+
+	def hasLeft(self):
+		"""checks if the left child is a real node
+
+		@rtype: bool
+		@return: left != None and left is a real node
+		"""
+		left = self.getLeft()
+		return left != None and left.isRealNode()
+
+
+	def hasRight(self):
+		"""checks if the right child is a real node
+
+		@rtype: bool
+		@return: right != None and right is a real node
+		"""
+		right = self.getRight()
+		return right != None and right.isRealNode()
+
 
 	def getParent(self):
 		"""returns the parent 
@@ -69,6 +109,7 @@ class AVLNode(object):
 		"""
 		return self.parent
 
+
 	def getValue(self):
 		"""return the value
 
@@ -77,88 +118,166 @@ class AVLNode(object):
 		"""
 		return self.value
 
-	def getHeight(self):
-		"""returns the height (assumes correct field)
 
+	def getSize(self):
+		"""returns the size field
+		
 		@rtype: int
-		@returns: the height of self, -1 if the node is virtual
+		@returns: the number of nodes in the subtree below self (inclusive)
+		Doesn't check for correctness
+		"""
+		return self.size
+	
+
+	def getHeight(self):
+		"""returns the height field
+
+		@pre: height is correct
+		@rtype: int
+		@returns: the height of self, -1 if the node is virtual.
 		"""
 		return self.height
 
-	def getBalanceFactor(self):
-		"""returns the balance_factor (assumes correct field)
 
+	def getBalanceFactor(self):
+		"""returns the balance_factor 
+
+		@pre: height correct for all fields
 		@rtype: int
 		@returns: the balace factor of self, 0 if the node is virtual
 		"""
 		right_height = self.getRight().getHeigth()
 		left_height = self.getLeft().getHeigth()
 		return left_height - right_height
-	
+
+
+	def getRank(self):
+		"""gets the rank of a node.
+			inOrder(tree)[self.getRank()-1] == self
+		
+		@rtype: int
+		@return: the rank of self
+		"""	
+		rank = self.getLeft().getSize() + 1
+		node = self
+		while (node != None):
+			parent = node.getParent()
+			if ((parent != None) and (node is parent.getRight())):
+				# using 'is' to make sure it has the same memory address
+				rank += parent.getLeft().getSize() + 1
+			node = parent
+		return rank
+
+
 	def setLeft(self, node):
 		"""sets left child without rebalance
 
-		@pre: node.value <= self.value
 		@post: updates help fields
-		@post: delete old right node
+		@post: old left deleted
 		@type node: AVLNode
 		@param node: a node
 		"""
-		#TODO make sure this is right
-		self.left = node
 		self.updateHeight()
-		
+		self.updateSize()
+
 
 	def setRight(self, node):
 		"""sets right child without rebalance
 
-		@pre: node.value > self.value
 		@post: updates help fields
-		@post: delete old right node
+		@post: old right deleted
 		@type node: AVLNode
 		@param node: a node
 		"""
-		#TODO make sure this is right
 		self.right = node
 		self.updateHeight()
+		self.updateSize()
+
 
 	def setParent(self, node):
 		"""sets parent and update the parent node.
-		if there were some child where self needs to go, it is deleted
-
-		@post: updated help fields
+		
+		@post: old parent deleted
 		@type node: AVLNode
-		@param node: a node
+		@param node: a node to be the parent of self
+		Doesn't affect node
 		"""
-		#TODO
-		return None
+		self.parent = node
+
 
 	def setValue(self, value):
-		"""sets value
+		"""sets value. 
+		If self was a virtual node, updates help fields and pads with virtual nodes
 
 		@type value: str
 		@param value: data
 		"""
-		#TODO
-		return None
+		if (not self.isRealNode()):
+			self.size = 1
+			self.height = 0
+			self.padWithVirtuals()
+		self.value = value
+
+	
+	def padWithVirtuals(self):
+		"""adds virtual nodes where self has no children"""
+		left = self.getLeft()
+		if (left == None):
+			self.setLeft(AVLNode.virtualNode(parent=self))
+		right = self.getRight()
+		if (right == None):
+			self.setLeft(AVLNode.virtualNode(parent=self))
+
+
+	def setSize(self, s):
+		"""sets the size of the node
+
+		@type s: int
+		@param s: the size
+		@warning: Doesn't check for correctness
+		"""
+		self.size = s
+
 
 	def setHeight(self, h):
 		"""sets the height of the node
 
 		@type h: int
 		@param h: the height
+		@warning: Doesn't check for correctness
 		"""
 		self.height = h
 
-	def updateHeight(self):
-		"""sets the height based on the height of the left and the right children
+
+	def updateSize(self):
+		"""sets the size based on the sizes of the left and the right children
 		
-		@pre: childrens heights are updated
+		@pre: children sizes are updated
+		"""
+		left = self.getLeft()
+		right = self.getRight()
+		self.setSize(left.getSize() + right.getSize() + 1)
+
+
+	def updateHeight(self):
+		"""sets the height based on the heights of the left and the right children
+		
+		@pre: children heights are updated
 		"""
 		left_height = self.getLeft().getHeight()
 		right_height = self.getRight().getHeight()
 
 		self.setHeight(max(left_height, right_height) + 1)
+
+
+	def updateHereAndUp(self):
+		"""Updates the help field of self and his parents, up to the root"""
+		node = self
+		while (node != None):
+			node.updateHeight()
+			node.updateSize()
+			node = node.getParent()
+
 
 	def deepHeights(self):
 		"""searches into the tree recursivly, 
@@ -168,22 +287,22 @@ class AVLNode(object):
 		@return: height of the node
 		"""
 		# handle virtual nodes		
-		if (not self.isRealNode):
+		if (not self.isRealNode()):
 			return -1
 		
 		# recursivly find height of left and right nodes
 		left_node = self.getLeft()
-		left_height = 0
+		left_height = -1
 		if (left_node != None):
-			left_height = left_node.setHeight()
+			left_height = left_node.deepHeights()
 		
 		right_node = self.getRight()
-		right_height = 0
+		right_height = -1
 		if (right_node != None):
-			right_height = right_node.setHeight()
+			right_height = right_node.deepHeights()
 		
 		# set the field
-		self.height = max(right_height, left_height) + 1
+		self.setHeight(max(right_height, left_height) + 1)
 		return self.getHeight()
 
 
@@ -198,6 +317,33 @@ class AVLNode(object):
 		self.deepHeights()
 		return self.getBalanceFactor()
 
+
+	def deepSizes(self):
+		"""searches into the tree recursivly, 
+		updates the size at each node.
+
+		@rtype: int 
+		@return: size of the node
+		"""
+		# handle virtual nodes
+		if (not self.isRealNode()):
+			return 0
+		
+		# recursively find size of left and right nodes
+		left_node = self.getLeft()
+		left_size = 0
+		if (left_node != None):
+			left_size = left_node.deepSizes()
+		
+		right_node = self.getRight()
+		right_size = 0
+		if (right_node != None):
+			right_size = right_node.deepSizes()
+		
+		# set the field
+		self.setSize(left_size + right_size + 1)
+		return self.getSize()
+		
 
 	def isRealNode(self):
 		"""returns whether self is not a virtual node 
@@ -220,39 +366,40 @@ class AVLNode(object):
 			balance_factor = parent.getBalanceFactor()
 			new_height = parent.getHeight()
 			
-			if old_height == new_height:
-				return
+			if (old_height == new_height):
+				break
 			
 			else:
 				if (balance_factor == 2):
 					# self.left cannot be None 
 					left_node = self.getLeft()
-					if left_node.getBalanceFactor() == -1:
+					if (left_node.getBalanceFactor() == -1):
 						left_node.rotateLeft()
 					self.rotateRight()
-					if is_insert:
-						return
+					if (is_insert):
+						break
 				
 				elif (balance_factor == -2):
 					# self.right cannot be None 
 					right_node = self.getRight()
-					if right_node.getBalanceFactor() == 1:
+					if (right_node.getBalanceFactor() == 1):
 						right_node.rotateRight()
 					self.rotateLeft()
-					if is_insert:
-						return
+					if (is_insert):
+						break
 				
 				else: # balance_factor < 2
 					parent = parent.getParent()
-			
+		
+		# update help fields after insertion or deletion
+		self.updateHereAndUp()
 
 
 	def rotateLeft(self):
 		"""makes self the left child of self.right
 		
-		@pre: height and balance factor were correct
+		@post: does not update help fields
 		"""
-		#TODO update help fields
 		# prepare pointers
 		parent = self.getParent()
 		child = self.getRight()
@@ -263,13 +410,12 @@ class AVLNode(object):
 		child.setLeft(self)
 		child.setParent(parent)	
 		
-		# update height fields
-		AVLNode.updateConnectedNodes(parent, child, self)
 
-	
-	"""makes self the right child of self.left"""
 	def rotateRight(self):
-		#TODO update help fields
+		"""makes self the right child of self.left
+		
+		@post: does not update help fields
+		"""
 		# prepare pointers
 		parent = self.getParent()
 		child = self.getLeft()
@@ -280,27 +426,6 @@ class AVLNode(object):
 		child.setRight(self)
 		child.setParent(parent)
 
-		# update height fields
-		AVLNode.updateConnectedNodes(parent, child, self)
-
-
-	@staticmethod
-	def updateConnectedNodes(node, child, grandchild):
-		"""Updated the height field for three connected nodes
-			parent
- 			  L> child 
-				  L> grandchild
-
-		@pre: all other nodes have correct height field
-		@post: height fields will be correct for given nodes
-		@type node, child, grandchild: AVLNode
-		@param node, child, grandchild: nodes in order of parantage
-		"""
-		# update bottom up
-		grandchild.updateHeight()
-		child.updateHeight()
-		node.updateHeight()
-	
 
 
 """
