@@ -87,7 +87,7 @@ class AVLNode(object):
 		@rtype: bool
 		@return: left != None and left is a real node
 		"""
-		left = self.getLeft()
+		left = self.getLeft(self)
 		return left != None and left.isRealNode()
 
 
@@ -438,9 +438,9 @@ class AVLTreeList(object):
 	Constructor, you are allowed to add more fields.  
 
 	"""
-	def __init__(self):
-		self.size = 0
-		self.root = None
+	def __init__(self, size = 0):
+		self.size = size
+		self.root = AVLNode.virtualNode()
 		# add your fields here
 
 
@@ -450,7 +450,7 @@ class AVLTreeList(object):
 	@returns: True if the list is empty, False otherwise
 	"""
 	def empty(self):
-		return None
+		return self.getRoot.value == None
 
 
 	"""retrieves the value of the i'th item in the list
@@ -462,7 +462,23 @@ class AVLTreeList(object):
 	@returns: the the value of the i'th item in the list
 	"""
 	def retrieve(self, i):
-		return None
+		node = self.getRoot
+		index = i + 1
+
+		while node.value != None:
+			left = node.getLeft().size
+			rank  = left.value + 1
+
+			if rank == i:
+				return node.value
+
+			if rank > i:
+				node = left
+				continue
+
+			node = node.right
+			index -= (i-rank)
+			
 
 	"""inserts val at position i in the list
 
@@ -475,9 +491,52 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def insert(self, i, val):
-		return -1
+		if self.size == 0:
+			self.root = AVLNode(val, None, None, 1, 1, None)
+			return 0
+
+		if i == self.length:
+			max = self.findMaximum()
+			max.right = biggerNode.createNewSonNode(val)
+			max.right.rebalance()
+			return # need to return the number of rotations done.
+
+		biggerNode = self.retrieve(i)
+
+		if not biggerNode.hasLeft():
+			biggerNode.left = biggerNode.createNewSonNode(val)
+			biggerNode.left.rebalance()
+			return # need to return the number of rotations done.
+
+		else:
+			pred = self.findPredecessor()
+			pred.right = pred.createNewSonNode(val)
+			pred.right.rebalance()
+			return # need to return the number of rotations done. 
 
 
+	"""find the predecessor of the node in the tree. 
+
+	@pre: self.left != None virtual node
+	@rtype: AVLNode
+	@returns: predecessor of the node in the tree.
+	"""
+	def findPredecessor(self):
+		node = self.left
+		while node.value != None:
+			node = node.right
+
+		return node.parent
+
+	"""create a new node to insert in insert() as son. 
+
+	@rtype: AVLNode
+	@returns: node to insert
+	"""
+	def createNewSonNode(self, val):
+		return AVLNode(val, None, None, self.getHeight() + 1, self.left.size + self.right.size + 1, self)
+
+	
 	"""deletes the i'th item in the list
 
 	@type i: int
@@ -496,7 +555,10 @@ class AVLTreeList(object):
 	@returns: the value of the first item, None if the list is empty
 	"""
 	def first(self):
-		return None
+		if self.size == 0:
+			return None
+
+		return self.findMinimum().value
 
 	"""returns the value of the last item in the list
 
@@ -504,7 +566,39 @@ class AVLTreeList(object):
 	@returns: the value of the last item, None if the list is empty
 	"""
 	def last(self):
-		return None
+		if self.size == 0:
+			return None
+
+		return self.findMaximum().value
+
+
+	"""find the node with the minimum value in the tree. 
+
+	@pre: self.length > 0 
+	@rtype: AVLNode
+	@returns: node with the minimum value in the tree. 
+	"""
+	def findMinimum(self):
+		node = self.root
+		while node.value is not None:
+			node = node.left
+
+		return node.parent
+
+
+	"""find the node with the maximum value in the tree. 
+
+	@pre: self.length > 0 
+	@rtype: AVLNode
+	@returns: node with the maximum value in the tree. 
+	"""
+	def findMaximum(self):
+		node = self.root
+		while node.value is not None:
+			node = node.right
+
+		return node.parent
+
 
 	"""returns an array representing list 
 
@@ -520,7 +614,7 @@ class AVLTreeList(object):
 	@returns: the size of the list
 	"""
 	def length(self):
-		return None
+		return self.root.size
 
 	"""sort the info values of the list
 
@@ -556,8 +650,19 @@ class AVLTreeList(object):
 	@returns: the first index that contains val, -1 if not found.
 	"""
 	def search(self, val):
-		return None
+		if not self.root.isRealNode():
+			return
+		
+		if self.root == val:
+			return self.root.getRank - 1
 
+		res1 = self.search(val)
+		if res1 != None:
+			return res1
+
+		res2 = self.search(val)
+		if res2 != None:
+			return res2		
 
 
 	"""returns the root of the tree representing the list
@@ -566,6 +671,8 @@ class AVLTreeList(object):
 	@returns: the root, None if the list is empty
 	"""
 	def getRoot(self):
-		return None
+		if self.size == 0:
+			return None
 
+		return self.root
 
