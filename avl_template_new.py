@@ -100,7 +100,7 @@ class AVLNode(object):
 		@rtype: bool
 		@return: left != None and left is a real node
 		"""
-		left = self.getLeft(self)
+		left = self.getLeft()
 		return left != None and left.isRealNode()
 
 
@@ -374,6 +374,7 @@ class AVLNode(object):
 	def rebalance(self, is_insert = False):
 		"""rebalance the tree after insertion or deletion of self
 		
+		@pre: the tree was AVL before modification
 		@pre: help fields were not updated 
 		@post help fields are updated
 		@type is_insert: bool
@@ -384,17 +385,20 @@ class AVLNode(object):
 		rotations_count = 0
 
 		parent = self.getParent()
-		old_height = parent.getHeight()
 		while parent != None:
-			parent.updateHeight()
-			parent.updateSize()
+			old_height = parent.getHeight()
+			parent.updateHelpers()
 			balance_factor = parent.getBalanceFactor()
 			new_height = parent.getHeight()
 			
 			if (old_height == new_height):
 				break	
-		
-			if (balance_factor == 2):
+			
+			elif (-2 < balance_factor < 2):
+				parent = parent.getParent()
+			
+			
+			elif (balance_factor == 2):
 				# self.left cannot be None 
 				left_node = parent.getLeft()
 				if (left_node.getBalanceFactor() == -1):
@@ -402,7 +406,7 @@ class AVLNode(object):
 					rotations_count += 1 
 				parent.rotateRight() 
 				rotations_count += 1
-				if (is_insert):
+				if (is_insert): # only one rotation at insertion
 					break
 			
 			elif (balance_factor == -2):
@@ -413,22 +417,21 @@ class AVLNode(object):
 					rotations_count += 1
 				parent.rotateLeft() 
 				rotations_count += 1
-				if (is_insert):
+				if (is_insert): # only one rotation at insertion
 					break
 			
-			else: # balance_factor < 2
-				parent = parent.getParent()
-	
-		# update help fields after insertion or deletion
-		if parent != None:
-			parent.updateHereAndUp() 
+			else: # this should never happen
+				raise Exception("Balance factor is greater then 2 (in absolute value)")
+		
+		if (parent != None):
+			parent.updateHereAndUp()
 		return rotations_count
 
 
 	def rotateLeft(self):
 		"""makes self the left child of self.right
 		
-		@post: does not update help fields
+		@post: update help fields of the node and the child
 		"""
 		# prepare pointers
 		parent = self.getParent()
@@ -440,11 +443,16 @@ class AVLNode(object):
 		child.setLeft(self)
 		child.setParent(parent)	
 		
+		# update helpers
+		self.updateHelpers()
+		child.updateHelpers()
+
+
 
 	def rotateRight(self):
 		"""makes self the right child of self.left
 		
-		@post: does not update help fields
+		@post: update help fields of the node and the child 
 		"""
 		# prepare pointers
 		parent = self.getParent()
@@ -455,6 +463,10 @@ class AVLNode(object):
 		self.setLeft(childs_right)
 		child.setRight(self)
 		child.setParent(parent)
+
+		# update helpers
+		self.updateHelpers()
+		child.updateHelpers()
 
 
 
