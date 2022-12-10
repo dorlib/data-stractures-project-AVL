@@ -31,18 +31,31 @@ class AVLNode(object):
 				parent=None):
 		"""Constructor, creates a real node.
 		if left or right are None, inserts virtual nodes instead
-
+		
 		@type value: str or None
 		@param value: data of your node
+		@type left: AVLNode
+		@param left: left child the node
+		@type right: AVLNode
+		@param right: right child of the node
+		@type height: int
+		@param height: length of the longest path to a leaf FIXME maybe update from children?
+		@type size: int
+		@param size: the number of nodes in the subtree FIXME maybe update from children?
 		"""
 		self.value = value
+		
 		# pointers
 		self.left = left
 		self.right = right
 		self.parent = parent
+		
 		# help fields
 		self.height = height
 		self.size = size
+		# # uncomment if move to calculation of help fields
+		# self.updateHelpers()
+		
 		# padding with virtual nodes
 		if (value != None):
 			self.padWithVirtuals()
@@ -177,8 +190,8 @@ class AVLNode(object):
 		@type node: AVLNode
 		@param node: a node
 		"""
-		self.updateHeight()
-		self.updateSize()
+		self.left = node
+		self.updateHelpers()
 
 
 	def setRight(self, node):
@@ -190,8 +203,7 @@ class AVLNode(object):
 		@param node: a node
 		"""
 		self.right = node
-		self.updateHeight()
-		self.updateSize()
+		self.updateHelpers()
 
 
 	def setParent(self, node):
@@ -270,12 +282,17 @@ class AVLNode(object):
 		self.setHeight(max(left_height, right_height) + 1)
 
 
+	def updateHelpers(self):
+		"""Updates both height and size"""
+		self.updateHeight()
+		self.updateSize()
+
+
 	def updateHereAndUp(self):
 		"""Updates the help field of self and his parents, up to the root"""
 		node = self
 		while (node != None):
-			node.updateHeight()
-			node.updateSize()
+			node.updateHelpers()
 			node = node.getParent()
 
 
@@ -356,43 +373,56 @@ class AVLNode(object):
 
 	def rebalance(self, is_insert = False):
 		"""rebalance the tree after insertion or deletion of self
-
+		
+		@pre: help fields were not updated 
+		@post help fields are updated
 		@type is_insert: bool
 		@param is_insert: if rebalance is after insertion
+		@rtype: int
+		@return: number of rotations
 		"""
+		rotations_count = 0
+
 		parent = self.getParent()
 		old_height = parent.getHeight()
 		while parent != None:
+			parent.updateHeight()
+			parent.updateSize()
 			balance_factor = parent.getBalanceFactor()
 			new_height = parent.getHeight()
 			
 			if (old_height == new_height):
-				break
-			
-			else:
-				if (balance_factor == 2):
-					# self.left cannot be None 
-					left_node = self.getLeft()
-					if (left_node.getBalanceFactor() == -1):
-						left_node.rotateLeft()
-					self.rotateRight()
-					if (is_insert):
-						break
-				
-				elif (balance_factor == -2):
-					# self.right cannot be None 
-					right_node = self.getRight()
-					if (right_node.getBalanceFactor() == 1):
-						right_node.rotateRight()
-					self.rotateLeft()
-					if (is_insert):
-						break
-				
-				else: # balance_factor < 2
-					parent = parent.getParent()
+				break	
 		
+			if (balance_factor == 2):
+				# self.left cannot be None 
+				left_node = parent.getLeft()
+				if (left_node.getBalanceFactor() == -1):
+					left_node.rotateLeft()
+					rotations_count += 1 
+				parent.rotateRight() 
+				rotations_count += 1
+				if (is_insert):
+					break
+			
+			elif (balance_factor == -2):
+				# self.right cannot be None 
+				right_node = parent.getRight()
+				if (right_node.getBalanceFactor() == 1):
+					right_node.rotateRight()
+					rotations_count += 1
+				parent.rotateLeft() 
+				rotations_count += 1
+				if (is_insert):
+					break
+			
+			else: # balance_factor < 2
+				parent = parent.getParent()
+	
 		# update help fields after insertion or deletion
-		self.updateHereAndUp()
+		if parent != None:
+			parent.updateHereAndUp() 
+		return rotations_count
 
 
 	def rotateLeft(self):
