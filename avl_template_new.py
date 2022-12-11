@@ -806,6 +806,27 @@ class AVLTreeList(object):
 	def concat(self, lst):
 		absDiff = abs(self.root.height - lst.root.height)
 
+		node = self.root
+		while node and node.value != None:
+			node = node.getLeft()
+		
+		LastNodeInSelf = node.parent
+
+		node = lst.root
+		while node and node.value != None:
+			node = node.getRight()
+		
+		firstNodeInLst = node.parent
+
+		LastNodeInSelf.right = firstNodeInLst
+
+		parent = firstNodeInLst.parent
+		son =  firstNodeInLst
+		while parent:
+			son.right = parent
+			parent.left = AVLNode.virtualNode
+			son = parent
+			parent = parent.parent
 
 		return absDiff
 
