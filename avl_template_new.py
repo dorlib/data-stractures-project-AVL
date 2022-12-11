@@ -4,7 +4,7 @@
 #id2      - complete info
 #name2    - complete info  
 
-
+import warnings #TODO delete all warnings bafore submition
 
 
 class AVLNode(object):
@@ -50,16 +50,15 @@ class AVLNode(object):
 		self.right = right
 		self.parent = parent
 		
-		# help fields
-		self.height = height
-		self.size = size
-		# # uncomment if move to calculation of help fields
-		# self.updateHelpers()
-		
 		# padding with virtual nodes
 		if (value != None):
 			self.padWithVirtuals()
 	
+		# help fields
+		self.height = height
+		self.size = size
+		
+		
 
 	@staticmethod
 	def virtualNode(parent=None):
@@ -76,13 +75,21 @@ class AVLNode(object):
 						parent=parent )
 
 
+	def __repr__(self):
+		return f"{self.getValue()}"
+
+
 	def getLeft(self):
 		"""returns the left child
 
 		@rtype: AVLNode
-		@returns: the left child of self, None if there is no left child
+		@returns: the left child of self, virtualNode if there is no left child
 		"""
-		return self.left
+		left = self.left
+		if left == None:
+			warnings.warn(f"a node with the value {self} left child was None") # TODO delete this warning before submition
+			return AVLNode.virtualNode(self)
+		return left
 		
 
 	def getRight(self):
@@ -91,7 +98,11 @@ class AVLNode(object):
 		@rtype: AVLNode
 		@returns: the right child of self, None if there is no right child
 		"""
-		return self.right
+		right = self.right 
+		if right == None:
+			warnings.warn(f"a node with the value {self} right child was None") # TODO delete this warning before submition
+			return AVLNode.virtualNode(self)
+		return right
 
 
 	def hasLeft(self):
@@ -159,8 +170,8 @@ class AVLNode(object):
 		@rtype: int
 		@returns: the balace factor of self, 0 if the node is virtual
 		"""
-		right_height = self.getRight().getHeigth()
-		left_height = self.getLeft().getHeigth()
+		right_height = self.getRight().getHeight()
+		left_height = self.getLeft().getHeight()
 		return left_height - right_height
 
 
@@ -185,25 +196,23 @@ class AVLNode(object):
 	def setLeft(self, node):
 		"""sets left child without rebalance
 
-		@post: updates help fields
+		@post: doesn't update help fields
 		@post: old left deleted
 		@type node: AVLNode
 		@param node: a node
 		"""
 		self.left = node
-		self.updateHelpers()
 
 
 	def setRight(self, node):
 		"""sets right child without rebalance
 
-		@post: updates help fields
+		@post: doesn't update help fields
 		@post: old right deleted
 		@type node: AVLNode
 		@param node: a node
 		"""
 		self.right = node
-		self.updateHelpers()
 
 
 	def setParent(self, node):
@@ -233,12 +242,14 @@ class AVLNode(object):
 	
 	def padWithVirtuals(self):
 		"""adds virtual nodes where self has no children"""
-		left = self.getLeft()
+		left = self.left # unsafe attribute access
 		if (left == None):
-			self.setLeft(AVLNode.virtualNode(parent=self))
-		right = self.getRight()
+			self.left = AVLNode.virtualNode(parent=self)
+		right = self.right # unsafe attribute access
 		if (right == None):
-			self.setLeft(AVLNode.virtualNode(parent=self))
+			self.right = AVLNode.virtualNode(parent=self)
+		
+		self.updateHelpers()
 
 
 	def setSize(self, s):
@@ -391,7 +402,7 @@ class AVLNode(object):
 			balance_factor = parent.getBalanceFactor()
 			new_height = parent.getHeight()
 			
-			if (old_height == new_height):
+			if ((abs(balance_factor) < 2) and old_height == new_height):
 				break	
 			
 			elif (-2 < balance_factor < 2):
@@ -404,10 +415,11 @@ class AVLNode(object):
 				if (left_node.getBalanceFactor() == -1):
 					left_node.rotateLeft()
 					rotations_count += 1 
-				parent.rotateRight() 
+				parent = parent.rotateRight() # iterate upwards
 				rotations_count += 1
 				if (is_insert): # only one rotation at insertion
 					break
+
 			
 			elif (balance_factor == -2):
 				# self.right cannot be None 
@@ -415,13 +427,14 @@ class AVLNode(object):
 				if (right_node.getBalanceFactor() == 1):
 					right_node.rotateRight()
 					rotations_count += 1
-				parent.rotateLeft() 
+				parent = parent.rotateLeft() # iterate upwards
 				rotations_count += 1
 				if (is_insert): # only one rotation at insertion
 					break
 			
 			else: # this should never happen
 				raise Exception("Balance factor is greater then 2 (in absolute value)")
+			
 		
 		if (parent != None):
 			parent.updateHereAndUp()
@@ -432,6 +445,8 @@ class AVLNode(object):
 		"""makes self the left child of self.right
 		
 		@post: update help fields of the node and the child
+		@rtype: AVLNode
+		@return: the original parent of self (before rotation)
 		"""
 		# prepare pointers
 		parent = self.getParent()
@@ -440,12 +455,21 @@ class AVLNode(object):
 
 		# rotate
 		self.setRight(childs_left)
+		self.setParent(child)
 		child.setLeft(self)
-		child.setParent(parent)	
-		
+		child.setParent(parent)
+		if (parent != None):
+			if (parent.getLeft() is self):
+				parent.setLeft(child)
+			elif (parent.getRight() is self):
+				parent.setRight(child)
+			else:
+				raise Exception("parent was disconnected from rotated node")
+
 		# update helpers
 		self.updateHelpers()
 		child.updateHelpers()
+		return parent
 
 
 
@@ -453,6 +477,8 @@ class AVLNode(object):
 		"""makes self the right child of self.left
 		
 		@post: update help fields of the node and the child 
+		@rtype: AVLNode
+		@return: the original parent of self (before rotation)
 		"""
 		# prepare pointers
 		parent = self.getParent()
@@ -461,13 +487,22 @@ class AVLNode(object):
 
 		# rotate
 		self.setLeft(childs_right)
+		self.setParent(child)
 		child.setRight(self)
 		child.setParent(parent)
+		if (parent != None):
+			if (parent.getLeft() is self):
+				parent.setLeft(child)
+			elif (parent.getRight() is self):
+				parent.setRight(child)
+			else:
+				raise Exception("parent was disconnected from rotated node")
+			
 
 		# update helpers
 		self.updateHelpers()
 		child.updateHelpers()
-
+		return parent
 
 
 """
