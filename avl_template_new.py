@@ -5,6 +5,7 @@
 #name2    - complete info  
 
 import warnings #TODO delete all warnings bafore submition
+import random
 
 
 class AVLNode(object):
@@ -504,6 +505,33 @@ class AVLNode(object):
 		child.updateHelpers()
 		return parent
 
+	"""find the predecessor of the node in the tree. 
+
+	@pre: self.left != virtual node
+	@rtype: AVLNode
+	@returns: predecessor of the node in the tree.
+	"""
+	def getPredecessor(self,):
+		node = self.getLeft()
+		while node.value != None:
+			node = node.getRight()
+
+		return node.getParent()
+
+
+	"""find the successor of the node in the tree. 
+
+	@pre: self.right != virtual node
+	@rtype: AVLNode
+	@returns: successor of the node in the tree.
+	"""
+	def getSuccessor(self):
+		node = self.getRight()
+		while node.value != None:
+			node = node.getLeft()
+
+		return node.getParent()
+
 
 """
 A class implementing the ADT list, using an AVL tree.
@@ -527,7 +555,11 @@ class AVLTreeList(object):
 	@returns: True if the list is empty, False otherwise
 	"""
 	def empty(self):
-		return self.getRoot.value == None
+		root = self.getRoot()
+		if root.value != None:
+			return root.value == None
+		
+		return True
 
 
 	"""retrieves the value of the i'th item in the list
@@ -575,35 +607,22 @@ class AVLTreeList(object):
 		if i == self.length:
 			max = self.findMaximum()
 			max.right = biggerNode.createNewSonNode(val)
-			max.right.rebalance()
+			max.right.rebalance(True)
 			return # need to return the number of rotations done.
 
 		biggerNode = self.retrieve(i)
 
 		if not biggerNode.hasLeft():
 			biggerNode.left = biggerNode.createNewSonNode(val)
-			biggerNode.left.rebalance()
+			biggerNode.left.rebalance(True)
 			return # need to return the number of rotations done.
 
 		else:
 			pred = self.findPredecessor()
 			pred.right = pred.createNewSonNode(val)
-			pred.right.rebalance()
+			pred.right.rebalance(True)
 			return # need to return the number of rotations done. 
 
-
-	"""find the predecessor of the node in the tree. 
-
-	@pre: self.left != None virtual node
-	@rtype: AVLNode
-	@returns: predecessor of the node in the tree.
-	"""
-	def findPredecessor(self):
-		node = self.left
-		while node.value != None:
-			node = node.right
-
-		return node.parent
 
 	"""create a new node to insert in insert() as son. 
 
@@ -623,8 +642,58 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def delete(self, i):
-		return -1
+		nodeToDelete = self.retrieve(i)
+		parent = nodeToDelete.parent
 
+		# nodeToDelete is a leaf.
+		if nodeToDelete.getRight().value == None and nodeToDelete.getLeft().value == None:
+			nodeToDelete = AVLNode.virtualNode(parent)
+
+			nodeToDelete.rebalance()
+			return
+			
+		# nodeToDelete has only one child.
+		elif nodeToDelete.getRight().value == None and nodeToDelete.getLeft().value != None:
+			if parent is None:
+				self.root = nodeToDelete.getLeft()
+			else:
+				parent.setLeft(nodeToDelete.getLeft())
+			
+			nodeToDelete.rebalance()
+			return
+
+		elif nodeToDelete.getRight().value != None and nodeToDelete.getLeft().value == None:
+			if parent is None:
+				self.root = nodeToDelete.getRight()
+			else:
+				parent.setRight(nodeToDelete.getRight())
+
+			nodeToDelete.rebalance()
+			return
+
+		
+		# nodeToDelete has two childes.
+		successor = nodeToDelete.getSuccessor()
+		successorParent = successor.getParent()
+		successorParent.setLeft(successor.getRight())
+
+		successor.setRight(nodeToDelete.getRight())
+		nodeToDelete.getRight().parent = successor
+
+		successor.setLeft(nodeToDelete.getLeft())
+		nodeToDelete.getLeft().parent = successor
+
+		successor.setParent(parent)
+
+		if parent.hasRight():
+			if parent.getRight() is nodeToDelete:
+				parent.setRight(successor)
+		
+		if parent.hasLeft():
+			if parent.getLeft() is nodeToDelete:
+				parent.setLeft(successor)
+
+		nodeToDelete.rebalance()
 
 	"""returns the value of the first item in the list
 
@@ -683,7 +752,22 @@ class AVLTreeList(object):
 	@returns: a list of strings representing the data structure
 	"""
 	def listToArray(self):
-		return None
+		
+		def listToArrayRec(node, lst):
+			if node :
+				if node is not node.isRealNode:
+					return lst
+
+				listToArrayRec(node.left, lst + [node.value])
+
+				lst.append(node.value)
+
+				listToArrayRec(node.right, lst + [node.value])
+
+				return lst
+
+		return listToArrayRec(self.root, [])
+
 
 	"""returns the size of the list 
 
@@ -691,7 +775,10 @@ class AVLTreeList(object):
 	@returns: the size of the list
 	"""
 	def length(self):
-		return self.root.size
+		if self and self.root.value != None:
+			return self.root.size
+		
+		return 0
 
 	"""sort the info values of the list
 
@@ -699,16 +786,31 @@ class AVLTreeList(object):
 	@returns: an AVLTreeList where the values are sorted by the info of the original list.
 	"""
 	def sort(self):
-		return None
+		lst = self.listToArray()
+		lst = lst.sort
 
+
+		tree = AVLTreeList(len(lst))
+
+		for i in range (len(lst)):
+			tree.insert(i, lst[i])
+		
+		return tree
 	"""permute the info values of the list 
 
 	@rtype: list
 	@returns: an AVLTreeList where the values are permuted randomly by the info of the original list. ##Use Randomness
 	"""
 	def permutation(self):
-		return None
+		lst = self.listToArray()
+		lst = random.shuffle(lst)
 
+		tree = AVLTreeList(len(lst))
+
+		for i in range (len(lst)):
+			tree.insert(i, lst[i])
+		
+		return tree
 	"""concatenates lst to self
 
 	@type lst: AVLTreeList
@@ -717,7 +819,23 @@ class AVLTreeList(object):
 	@returns: the absolute value of the difference between the height of the AVL trees joined
 	"""
 	def concat(self, lst):
-		return None
+		absDiff = abs(self.root.height - lst.root.height)
+		
+		LastNodeInSelf = self.retrieve(self.size)
+		firstNodeInLst = lst.retrieve(self.size)
+
+		LastNodeInSelf.right = firstNodeInLst
+
+		parent = firstNodeInLst.parent
+		son =  firstNodeInLst
+		while parent:
+			son.right = parent
+			parent.left = AVLNode.virtualNode()
+			son = parent
+			parent = parent.parent
+
+		return absDiff
+
 
 	"""searches for a *value* in the list
 
@@ -748,7 +866,7 @@ class AVLTreeList(object):
 	@returns: the root, None if the list is empty
 	"""
 	def getRoot(self):
-		if self.size == 0:
+		if self.length() == 0:
 			return None
 
 		return self.root
