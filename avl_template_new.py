@@ -607,20 +607,20 @@ class AVLTreeList(object):
 		if i == self.length:
 			max = self.findMaximum()
 			max.right = biggerNode.createNewSonNode(val)
-			max.right.rebalance()
+			max.right.rebalance(True)
 			return # need to return the number of rotations done.
 
 		biggerNode = self.retrieve(i)
 
 		if not biggerNode.hasLeft():
 			biggerNode.left = biggerNode.createNewSonNode(val)
-			biggerNode.left.rebalance()
+			biggerNode.left.rebalance(True)
 			return # need to return the number of rotations done.
 
 		else:
 			pred = self.findPredecessor()
 			pred.right = pred.createNewSonNode(val)
-			pred.right.rebalance()
+			pred.right.rebalance(True)
 			return # need to return the number of rotations done. 
 
 
@@ -649,18 +649,28 @@ class AVLTreeList(object):
 		if nodeToDelete.getRight().value == None and nodeToDelete.getLeft().value == None:
 			nodeToDelete = AVLNode.virtualNode(parent)
 
+			nodeToDelete.rebalance()
+			return
+			
 		# nodeToDelete has only one child.
 		elif nodeToDelete.getRight().value == None and nodeToDelete.getLeft().value != None:
 			if parent is None:
 				self.root = nodeToDelete.getLeft()
 			else:
 				parent.setLeft(nodeToDelete.getLeft())
+			
+			nodeToDelete.rebalance()
+			return
 
 		elif nodeToDelete.getRight().value != None and nodeToDelete.getLeft().value == None:
 			if parent is None:
 				self.root = nodeToDelete.getRight()
 			else:
 				parent.setRight(nodeToDelete.getRight())
+
+			nodeToDelete.rebalance()
+			return
+
 		
 		# nodeToDelete has two childes.
 		successor = nodeToDelete.getSuccessor()
@@ -683,7 +693,7 @@ class AVLTreeList(object):
 			if parent.getLeft() is nodeToDelete:
 				parent.setLeft(successor)
 
-		parent.rebalance()
+		nodeToDelete.rebalance()
 
 	"""returns the value of the first item in the list
 
@@ -745,7 +755,7 @@ class AVLTreeList(object):
 		
 		def listToArrayRec(node, lst):
 			if node :
-				if node is AVLNode.virtualNode:
+				if node is not node.isRealNode:
 					return lst
 
 				listToArrayRec(node.left, lst + [node.value])
@@ -779,6 +789,7 @@ class AVLTreeList(object):
 		lst = self.listToArray()
 		lst = lst.sort
 
+
 		tree = AVLTreeList(len(lst))
 
 		for i in range (len(lst)):
@@ -809,18 +820,9 @@ class AVLTreeList(object):
 	"""
 	def concat(self, lst):
 		absDiff = abs(self.root.height - lst.root.height)
-
-		node = self.root
-		while node and node.value != None:
-			node = node.getLeft()
 		
-		LastNodeInSelf = node.parent
-
-		node = lst.root
-		while node and node.value != None:
-			node = node.getRight()
-		
-		firstNodeInLst = node.parent
+		LastNodeInSelf = self.retrieve(self.size)
+		firstNodeInLst = lst.retrieve(self.size)
 
 		LastNodeInSelf.right = firstNodeInLst
 
@@ -828,11 +830,13 @@ class AVLTreeList(object):
 		son =  firstNodeInLst
 		while parent:
 			son.right = parent
-			parent.left = AVLNode.virtualNode
+			parent.left = AVLNode.virtualNode()
 			son = parent
 			parent = parent.parent
 
 		return absDiff
+
+
 	"""searches for a *value* in the list
 
 	@type val: str
