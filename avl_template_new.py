@@ -581,7 +581,7 @@ class AVLTreeList(object):
 				continue
 
 			node = node.right
-			index -= (index-rank)
+			index = (index-rank)
 
 
 	"""retrieves the node of the i'th item in the list
@@ -603,11 +603,11 @@ class AVLTreeList(object):
 				return node
 
 			if rank > index:
-				node = node.left
+				node = node.getLeft()
 				continue
 
-			node = node.right
-			index -= (index-rank)
+			node = node.getRight()
+			index = (index-rank)
 
 
 	"""inserts val at position i in the list
@@ -622,28 +622,37 @@ class AVLTreeList(object):
 	"""
 	def insert(self, i, val):
 		if self.size == 0:
-			self.root = AVLNode(val, None, None, 1, 1, None)
+			self.root = AVLNode(val, None, None, 0, 1, None)
 			self.size = 1
 			return 0
 
 		if i == self.length():
 			max = self.findMaximum()
-			max.right = AVLNode(val, None, None, 1, 1, max)
+			max.right = AVLNode(val, None, None, 0, 1, max)
 			self.size += 1
-			return max.right.rebalance(True)
+			
+			numOfRotations = max.right.rebalance(True)
+			self.updateRoot()
+			return numOfRotations
 
 		biggerNode = self.retrieveNode(i)
 
 		if not biggerNode.hasLeft():
-			biggerNode.left = AVLNode(val, None, None, 1, 1, biggerNode)
+			biggerNode.left = AVLNode(val, None, None, 0, 1, biggerNode)
 			self.size += 1
-			return biggerNode.left.rebalance(True)
+			
+			numOfRotations = biggerNode.left.rebalance(True)
+			self.updateRoot()
+			return numOfRotations
 
 		else:
 			pred = biggerNode.getPredecessor()
-			pred.right = AVLNode(val, None, None, 1, 1, pred)
+			pred.right = AVLNode(val, None, None, 0, 1, pred)
 			self.size += 1
-			return pred.right.rebalance(True)
+
+			numOfRotations =  pred.right.rebalance(True)
+			self.updateRoot()
+			return numOfRotations
 
 	
 	"""deletes the i'th item in the list
@@ -662,9 +671,11 @@ class AVLTreeList(object):
 		if not nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
 			nodeToDelete = AVLNode.virtualNode(parent)
 
-			nodeToDelete.rebalance()
+			numOfRotations = nodeToDelete.rebalance()
 			self.size -= 1
-			return 0
+			self.updateRoot()
+
+			return numOfRotations 
 			
 		# nodeToDelete has only one child.
 		elif not nodeToDelete.hasRight() and nodeToDelete.hasLeft():
@@ -673,9 +684,11 @@ class AVLTreeList(object):
 			else:
 				parent.setLeft(nodeToDelete.getLeft())
 			
-			nodeToDelete.rebalance()
+			numOfRotations = nodeToDelete.rebalance()
 			self.size -=1
-			return 0
+			self.updateRoot()
+
+			return numOfRotations
 
 		elif nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
 			if parent is None:
@@ -683,9 +696,11 @@ class AVLTreeList(object):
 			else:
 				parent.setRight(nodeToDelete.getRight())
 
-			nodeToDelete.rebalance()
+			numOfRotations = nodeToDelete.rebalance()
 			self.size -=1
-			return  0
+			self.updateRoot()
+
+			return numOfRotations
 
 		# nodeToDelete has two childes.
 		successor = nodeToDelete.getSuccessor()
@@ -708,7 +723,11 @@ class AVLTreeList(object):
 			if parent.getLeft() is nodeToDelete:
 				parent.setLeft(successor)
 
-		return nodeToDelete.rebalance()
+		numOfRotations = nodeToDelete.rebalance()
+		self.size -=1
+		self.updateRoot()
+
+		return numOfRotations
 
 	"""returns the value of the first item in the list
 
@@ -774,6 +793,7 @@ class AVLTreeList(object):
 
 	"""recursive helper function for listToArray 
 
+
 	@rtype: list
 	@returns: a list of strings representing the data structure
 	"""
@@ -781,10 +801,10 @@ class AVLTreeList(object):
 		if not root or not root.isRealNode():
 			return []
 
-		leftList = self.listToArrayRec(root.left)
-		rightList = self.listToArrayRec(root.right)
+		leftList = self.listToArrayRec(root.getLeft())
+		rightList = self.listToArrayRec(root.getRight())
 
-		return leftList + [root.value] + rightList
+		return leftList + [root.getValue()] + rightList
 	
 
 	"""returns the size of the list 
@@ -830,6 +850,8 @@ class AVLTreeList(object):
 			tree.insert(i, lst[i])
 		
 		return tree
+
+
 	"""concatenates lst to self
 
 	@type lst: AVLTreeList
