@@ -513,7 +513,7 @@ class AVLNode(object):
 	"""
 	def getPredecessor(self,):
 		node = self.getLeft()
-		while node.value != None:
+		while node.isRealNode():
 			node = node.getRight()
 
 		return node.getParent()
@@ -527,7 +527,7 @@ class AVLNode(object):
 	"""
 	def getSuccessor(self):
 		node = self.getRight()
-		while node.value != None:
+		while node.isRealNode():
 			node = node.getLeft()
 
 		return node.getParent()
@@ -543,9 +543,9 @@ class AVLTreeList(object):
 	Constructor, you are allowed to add more fields.  
 
 	"""
-	def __init__(self, size = 0):
+	def __init__(self, size = 0, root = AVLNode.virtualNode()):
 		self.size = size
-		self.root = AVLNode.virtualNode()
+		self.root = root
 		# add your fields here
 
 
@@ -555,11 +555,7 @@ class AVLTreeList(object):
 	@returns: True if the list is empty, False otherwise
 	"""
 	def empty(self):
-		root = self.getRoot()
-		if root.value != None:
-			return root.value == None
-		
-		return True
+		return self.getRoot().isRealNode()
 
 
 	"""retrieves the value of the i'th item in the list
@@ -571,23 +567,48 @@ class AVLTreeList(object):
 	@returns: the the value of the i'th item in the list
 	"""
 	def retrieve(self, i):
-		node = self.getRoot
+		node = self.getRoot()
 		index = i + 1
 
-		while node.value != None:
-			left = node.getLeft().size
-			rank  = left.value + 1
+		while node.isRealNode():
+			rank  = node.getLeft().size + 1
 
-			if rank == i:
-				return node.value
+			if rank == index:
+				return node.getValue()
 
-			if rank > i:
-				node = left
+			if rank > index:
+				node = node.left
 				continue
 
 			node = node.right
-			index -= (i-rank)
-			
+			index = (index-rank)
+
+
+	"""retrieves the node of the i'th item in the list
+
+	@type i: int
+	@pre: 0 <= i < self.length()
+	@param i: index in the list
+	@rtype: AVLNode
+	@returns: the the node of the i'th item in the list
+	"""
+	def retrieveNode(self, i):
+		node = self.getRoot()
+		index = i + 1
+
+		while node.isRealNode():
+			rank  = node.getLeft().size + 1
+
+			if rank == index:
+				return node
+
+			if rank > index:
+				node = node.getLeft()
+				continue
+
+			node = node.getRight()
+			index = (index-rank)
+
 
 	"""inserts val at position i in the list
 
@@ -601,36 +622,37 @@ class AVLTreeList(object):
 	"""
 	def insert(self, i, val):
 		if self.size == 0:
-			self.root = AVLNode(val, None, None, 1, 1, None)
+			self.root = AVLNode(val, None, None, 0, 1, None)
+			self.size = 1
 			return 0
 
-		if i == self.length:
+		if i == self.length():
 			max = self.findMaximum()
-			max.right = biggerNode.createNewSonNode(val)
-			max.right.rebalance(True)
-			return # need to return the number of rotations done.
+			max.right = AVLNode(val, None, None, 0, 1, max)
+			self.size += 1
+			
+			numOfRotations = max.right.rebalance(True)
+			self.updateRoot()
+			return numOfRotations
 
-		biggerNode = self.retrieve(i)
+		biggerNode = self.retrieveNode(i)
 
 		if not biggerNode.hasLeft():
-			biggerNode.left = biggerNode.createNewSonNode(val)
-			biggerNode.left.rebalance(True)
-			return # need to return the number of rotations done.
+			biggerNode.left = AVLNode(val, None, None, 0, 1, biggerNode)
+			self.size += 1
+			
+			numOfRotations = biggerNode.left.rebalance(True)
+			self.updateRoot()
+			return numOfRotations
 
 		else:
-			pred = self.findPredecessor()
-			pred.right = pred.createNewSonNode(val)
-			pred.right.rebalance(True)
-			return # need to return the number of rotations done. 
+			pred = biggerNode.getPredecessor()
+			pred.right = AVLNode(val, None, None, 0, 1, pred)
+			self.size += 1
 
-
-	"""create a new node to insert in insert() as son. 
-
-	@rtype: AVLNode
-	@returns: node to insert
-	"""
-	def createNewSonNode(self, val):
-		return AVLNode(val, None, None, self.getHeight() + 1, self.left.size + self.right.size + 1, self)
+			numOfRotations =  pred.right.rebalance(True)
+			self.updateRoot()
+			return numOfRotations
 
 	
 	"""deletes the i'th item in the list
@@ -642,36 +664,44 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def delete(self, i):
-		nodeToDelete = self.retrieve(i)
+		nodeToDelete = self.retrieveNode(i)
 		parent = nodeToDelete.parent
 
 		# nodeToDelete is a leaf.
-		if nodeToDelete.getRight().value == None and nodeToDelete.getLeft().value == None:
+		if not nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
 			nodeToDelete = AVLNode.virtualNode(parent)
 
-			nodeToDelete.rebalance()
-			return
+			numOfRotations = nodeToDelete.rebalance()
+			self.size -= 1
+			self.updateRoot()
+
+			return numOfRotations 
 			
 		# nodeToDelete has only one child.
-		elif nodeToDelete.getRight().value == None and nodeToDelete.getLeft().value != None:
+		elif not nodeToDelete.hasRight() and nodeToDelete.hasLeft():
 			if parent is None:
 				self.root = nodeToDelete.getLeft()
 			else:
 				parent.setLeft(nodeToDelete.getLeft())
 			
-			nodeToDelete.rebalance()
-			return
+			numOfRotations = nodeToDelete.rebalance()
+			self.size -=1
+			self.updateRoot()
 
-		elif nodeToDelete.getRight().value != None and nodeToDelete.getLeft().value == None:
+			return numOfRotations
+
+		elif nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
 			if parent is None:
 				self.root = nodeToDelete.getRight()
 			else:
 				parent.setRight(nodeToDelete.getRight())
 
-			nodeToDelete.rebalance()
-			return
+			numOfRotations = nodeToDelete.rebalance()
+			self.size -=1
+			self.updateRoot()
 
-		
+			return numOfRotations
+
 		# nodeToDelete has two childes.
 		successor = nodeToDelete.getSuccessor()
 		successorParent = successor.getParent()
@@ -693,7 +723,11 @@ class AVLTreeList(object):
 			if parent.getLeft() is nodeToDelete:
 				parent.setLeft(successor)
 
-		nodeToDelete.rebalance()
+		numOfRotations = nodeToDelete.rebalance()
+		self.size -=1
+		self.updateRoot()
+
+		return numOfRotations
 
 	"""returns the value of the first item in the list
 
@@ -704,7 +738,7 @@ class AVLTreeList(object):
 		if self.size == 0:
 			return None
 
-		return self.findMinimum().value
+		return str(self.findMinimum().value)
 
 	"""returns the value of the last item in the list
 
@@ -715,35 +749,35 @@ class AVLTreeList(object):
 		if self.size == 0:
 			return None
 
-		return self.findMaximum().value
+		return str(self.findMaximum().value)
 
 
-	"""find the node with the minimum value in the tree. 
+	"""find the node with the minimum rank in the tree. 
 
 	@pre: self.length > 0 
 	@rtype: AVLNode
-	@returns: node with the minimum value in the tree. 
+	@returns: node with the minimum rank in the tree. 
 	"""
 	def findMinimum(self):
-		node = self.root
-		while node.value is not None:
+		node = self.getRoot()
+		while node.isRealNode():
 			node = node.left
 
 		return node.parent
 
 
-	"""find the node with the maximum value in the tree. 
+	"""find the node with the maximum rank in the tree. 
 
 	@pre: self.length > 0 
 	@rtype: AVLNode
-	@returns: node with the maximum value in the tree. 
+	@returns: node with the maximum rank in the tree. 
 	"""
 	def findMaximum(self):
-		node = self.root
-		while node.value is not None:
+		node = self.getRoot()
+		while node.isRealNode():
 			node = node.right
 
-		return node.parent
+		return node.getParent()
 
 
 	"""returns an array representing list 
@@ -752,22 +786,26 @@ class AVLTreeList(object):
 	@returns: a list of strings representing the data structure
 	"""
 	def listToArray(self):
-		
-		def listToArrayRec(node, lst):
-			if node :
-				if node is not node.isRealNode:
-					return lst
+		if not self.getRoot() or not self.root.isRealNode():
+			return []
 
-				listToArrayRec(node.left, lst + [node.value])
+		return self.listToArrayRec(self.root)
 
-				lst.append(node.value)
+	"""recursive helper function for listToArray 
 
-				listToArrayRec(node.right, lst + [node.value])
 
-				return lst
+	@rtype: list
+	@returns: a list of strings representing the data structure
+	"""
+	def listToArrayRec(self, root):
+		if not root or not root.isRealNode():
+			return []
 
-		return listToArrayRec(self.root, [])
+		leftList = self.listToArrayRec(root.getLeft())
+		rightList = self.listToArrayRec(root.getRight())
 
+		return leftList + [root.getValue()] + rightList
+	
 
 	"""returns the size of the list 
 
@@ -776,7 +814,7 @@ class AVLTreeList(object):
 	"""
 	def length(self):
 		if self and self.root.value != None:
-			return self.root.size
+			return self.size
 		
 		return 0
 
@@ -787,15 +825,16 @@ class AVLTreeList(object):
 	"""
 	def sort(self):
 		lst = self.listToArray()
-		lst = lst.sort
+		lst.sort()
 
-
-		tree = AVLTreeList(len(lst))
+		tree = AVLTreeList()
 
 		for i in range (len(lst)):
 			tree.insert(i, lst[i])
 		
 		return tree
+
+
 	"""permute the info values of the list 
 
 	@rtype: list
@@ -803,7 +842,7 @@ class AVLTreeList(object):
 	"""
 	def permutation(self):
 		lst = self.listToArray()
-		lst = random.shuffle(lst)
+		random.shuffle(lst)
 
 		tree = AVLTreeList(len(lst))
 
@@ -811,6 +850,8 @@ class AVLTreeList(object):
 			tree.insert(i, lst[i])
 		
 		return tree
+
+
 	"""concatenates lst to self
 
 	@type lst: AVLTreeList
@@ -821,8 +862,8 @@ class AVLTreeList(object):
 	def concat(self, lst):
 		absDiff = abs(self.root.height - lst.root.height)
 		
-		LastNodeInSelf = self.retrieve(self.size)
-		firstNodeInLst = lst.retrieve(self.size)
+		LastNodeInSelf = self.retrieveNode(self.size)
+		firstNodeInLst = lst.retrieveNode(self.size)
 
 		LastNodeInSelf.right = firstNodeInLst
 
@@ -849,7 +890,7 @@ class AVLTreeList(object):
 			return
 		
 		if self.root == val:
-			return self.root.getRank - 1
+			return self.root.getRank() - 1
 
 		res1 = self.search(val)
 		if res1 != None:
@@ -866,7 +907,7 @@ class AVLTreeList(object):
 	@returns: the root, None if the list is empty
 	"""
 	def getRoot(self):
-		if self.length() == 0:
+		if self.size == 0:
 			return None
 
 		return self.root
