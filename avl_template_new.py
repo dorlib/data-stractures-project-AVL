@@ -993,3 +993,16 @@ class AVLTreeList(object):
 
 		return self.root
 
+
+	"""updates the root after rebalancing  
+
+	"""
+	def updateRoot(self):
+		root = self.root
+
+		while root.getParent() != None:
+			root = root.getParent()
+		
+		self.root = root
+
+
