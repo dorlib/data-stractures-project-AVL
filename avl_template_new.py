@@ -1243,10 +1243,20 @@ class AVLTreeList(object):
 	@returns: the first index that contains val, -1 if not found.
 	"""
 	def search(self, val):
-		search_node = self.searchInSorted(val)
-		if search_node.isRealNode():
-			return search_node.getListNode().getRank()
-		return -1
+		if not self.root.isRealNode():
+			return -1
+
+		if self.root == val:
+			return self.root.getRank() - 1
+
+		res1 = self.search(val)
+		if res1 != None:
+			return res1
+
+		res2 = self.search(val)
+		if res2 != None:
+			return res2		
+
 
 	"""returns the root of the tree representing the list
 
