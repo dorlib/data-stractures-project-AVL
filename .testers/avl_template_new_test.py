@@ -115,119 +115,36 @@ class Test_AVLNode(unittest.TestCase):
     
         rec_assert_copy(copy, origin)
     
-    def test_adding_and_removing_pointers(self):
-        copy = self.c.copyForSort(set_list_node=True)
-        origin = self.c
-
-        def rec_assert_copy(copy, origin):
-            assert copy is not origin, f"same instance {copy}, {origin}"
-            assert copy.getListNode() is origin or origin.value == None, f"pointer error {copy}, {origin}"
-            assert copy.value == origin.value, f"different value {copy}, {origin}"
-            if copy.isRealNode():
-                rec_assert_copy(copy.right, origin.right)
-                rec_assert_copy(copy.left, origin.left)
-    
-        rec_assert_copy(copy, origin)
-
-        # test_pointer_deletion
-        copy.removeListNodePointers()
-        assert copy.getListNode() == None
-        assert copy.getLeft().getListNode() == None
-        assert copy.getRight().getListNode() == None
 
 class Test_AVLTreeList(unittest.TestCase):
-    def setUp(self):
-        # called before each test
-        self.a = avl.AVLNode("a", None, None, 0, 1)
-        self.d = avl.AVLNode("d", None, None, 0, 1)
-        self.b = avl.AVLNode("b", self.a, None, 1, 2)
-        self.c = avl.AVLNode("c", self.b, self.d, 2, 4)
-        self.a.setParent(self.b) #       (c)
-        self.b.setParent(self.c) #    (b)↲ ↳(d)
-        self.d.setParent(self.c) # (a)↲
-
-    def test_insertion_to_avl_search_tree(self):
-        list = avl.AVLTreeList()
-        nodes_to_insert = [self.a, self.b, self.c, self.d]
-        for i in range(24): #4!=24
-            random.shuffle(nodes_to_insert)
-            
-            list = avl.AVLTreeList(size=4)
-            list.setRoot(self.c)
-            for node in nodes_to_insert:
-                list.insertToSearchTree(node)
-            
-            root = list.sorted_root
-            assert root.deepHeights() == 2
-            assert abs(root.getBalanceFactor()) < 2
-            assert root.value > root.left.value 
-            assert root.value < root.right.value
-
-    def test_double_insertion(self):
-        # init list
-        self.list = avl.AVLTreeList(size=4)
-        self.list.setRoot(self.c)
-        self.list.setSortedRoot(self.c.copyForSort(True))
-        # insert some node (no need for rotations)
-        a_copy = self.a.copyForSort()
-        a_copy.setParent(self.d)
-        self.d.setLeft(a_copy)
-        a_copy.updateHereAndUp()
-        # test insert
-        self.list.insertToSearchTree(a_copy)
-        found = self.list.searchInSorted("a")
+    def test_insertion(self):
+        self.lst = avl.AVLTreeList()
+        for i in range(10):
+            self.lst.insert(i, str(i))
+            assert self.lst.last() == str(i)
         
-        assert found != None
-        assert found.left.value == "a" or found.right.value == "a" or found.getSuccessor().left.value == "a"
+        # insert in the middle
+        self.lst.insert(5, "%")
+        assert self.lst.retrieve(4) == "4"
+        assert self.lst.retrieve(5) == "%"
+        assert self.lst.retrieve(6) == "5"
+
+
+    def test_list_to_array(self):
+        self.test_insertion()
+        array = self.lst.listToArray()
+        lst = [str(i) if i <= 5 else str(i-1) for i in range(11)]
+        lst[5] = "%"
+        assert array == lst
     
-    def test_deletion(self):
-        #init
-        self.test_double_insertion()
-
-        list_root = self.list.getRoot()
-        self.list.deleteFromSearchTree(list_root)
-        assert self.list.searchInSorted(list_root.value).value == None, "not deleted"
-        assert self.list.searchInSorted("a"), "deleted a"
-        assert self.list.searchInSorted("b"), "deleted b"
-        assert self.list.searchInSorted("d"), "deleted d"
-
-        a_origin = list_root.left.left
-        a_copy = list_root.right.left
-        self.list.deleteFromSearchTree(a_copy) # delete duplicate a
-        stayed_a = self.list.searchInSorted("a")
-        assert stayed_a.value != None, "deleted both nodes" 
-        assert stayed_a.list_node is a_origin, "deleted wrong node"
-        assert self.list.searchInSorted("b"), "deleted b"
-        assert self.list.searchInSorted("d"), "deleted d"
-
-    def test_sort(self):
-        list = avl.AVLTreeList(4)
-        nodes_to_insert = [self.a, self.b, self.c, self.d]
-        for i in range(24): #4!=24
-            random.shuffle(nodes_to_insert)
-            
-            list = avl.AVLTreeList(size=4)
-            list.setRoot(self.c)
-            for node in nodes_to_insert:
-                list.insertToSearchTree(node)
-            sorted = list.sort()
-            root = sorted.getRoot()
-            sorted_root = sorted.getSortedRoot()
-            assert not sorted is list
-            assert root.value == sorted_root.value
-            assert root.left.value == sorted_root.left.value
-            assert root.right.value == sorted_root.right.value
-            z = avl.AVLNode("z",None,None)
-            sorted.insertToSearchTree(z)
-            assert list.searchInSorted("z").value == None, "z inserted to both lists"
-    
-    def test_sort_empty(self):
-        list = avl.AVLTreeList()
-        assert type(list.sort()) == avl.AVLTreeList
-
-
-            
+    def test_delete(self):
+        self.lst = avl.AVLTreeList()
+        for i in range (10):
+            self.lst.insert(i, "_")
         
+        for i in range(11):
+            self.lst
+    
 
 if __name__ == "__main__":
     unittest.main()
