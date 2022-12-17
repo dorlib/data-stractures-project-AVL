@@ -1,6 +1,5 @@
 import avl_template_new as avl
 import unittest
-import random
 
 class Test_AVLNode(unittest.TestCase):
     def setUp(self):
@@ -145,6 +144,32 @@ class Test_AVLTreeList(unittest.TestCase):
         for i in range(11):
             self.lst
     
+    def test_sort(self):
+        array = [str(i) for i in range(7)]
+        for i in range(10000): # 10000 > 7!
+            permutation = avl.AVLTreeList.shuffle(avl.AVLTreeList(), array.copy())
+            list = avl.AVLTreeList(0, avl.AVLNode.virtualNode())
+            for i, val in enumerate(permutation):
+                list.insert(i, val)
+            sorted = list.sort()
+            assert list.listToArray() == permutation, "sort was inplace"
+            assert sorted.listToArray() == array, str(sorted.listToArray())
+    
+    def test_sort_with_duplicates(self):
+        lst = avl.AVLTreeList()
+        lst.insert(0,'a')
+        lst.insert(1,'d')
+        lst.insert(2,'b')
+        lst.insert(3,'c')
+        lst.insert(4,'e')
+        lst.insert(5,'b')
+        # [a,d,b,c,e,b]
+        fst_b = lst.retrieve(2)
+        scnd_b = lst.retrieve(5)
+        sorted = lst.sort()
+        # [a,b,b,c,d,e]
+        assert sorted.retrieve(1) == fst_b
+        assert sorted.retrieve(2) == scnd_b
 
 if __name__ == "__main__":
     unittest.main()

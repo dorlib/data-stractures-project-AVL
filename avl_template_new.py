@@ -473,7 +473,7 @@ class AVLNode(object):
 		@rtype: bool
 		@returns: False if self is a virtual node, True otherwise.
 		"""
-		return self.p_value != None
+		return self.p_value != None and self.p_height != -1 and self.p_size != 0
 
 
 	def rebalance(self, is_insert = False):
@@ -1016,11 +1016,70 @@ class AVLTreeList(object):
 		@returns: new list values are sorted by the info of the original list.
 		"""
 		array = self.listToArray()
-		array.sort()
-		new_list = AVLTreeList()
+		new_list = AVLTreeList(0, AVLNode.virtualNode())
 		for i, item in enumerate(array):
-			new_list.insert(i, item)
+			new_list.insertAsSearchTree(item)
 		return new_list
+
+	def searchInSorted(self, value):
+		"""searches into the tree as if it was a BST
+		
+		@pre: list is a BST
+		@pre: value != None
+		@type value: str
+		@param value: value to search for
+		@rtype: AVLNode
+		@return: the node where value is or should be (if not in the search tree)
+		"""
+		if value == None:
+			raise Exception("cannot look for a virtual node")
+
+		node = self.root
+		while node.isRealNode():
+			node_value = node.getValue()
+			if value == node_value:
+				return node
+			elif value > node_value:
+				node = node.getRight()
+			else: # value < node_value
+				node = node.getLeft()
+		return node
+
+
+	def insertAsSearchTree(self, value):
+		"""insert to the list in sorted way (BST)
+		used for sorting
+
+		@pre: list is a BST
+		@post: insert to list as search tree
+		@post: if there's more then one occurance, insert right next to it.
+		@type value: str
+		@param value: value inserted to the list
+		"""
+		place_to_insert = self.searchInSorted(value)
+
+		if place_to_insert.isRealNode():
+			# this is a repeating value, check for children
+			if not place_to_insert.hasLeft():
+				# insert to the left
+				place_to_insert =  place_to_insert.getLeft()
+
+			elif not place_to_insert.hasRight():
+				# insert to the right
+				place_to_insert = place_to_insert.getRight()
+
+			else: # has both children
+				successor = place_to_insert.getSuccessor()
+				# successor has no left child
+				place_to_insert = successor.getLeft()
+
+		place_to_insert.setValue(value)
+		place_to_insert.padWithVirtuals()
+		place_to_insert.rebalance(is_insert=True)
+		self.size += 1
+		# update the root 
+		self.updateRoot()
+
 
 
 	"""permute the info values of the list 
