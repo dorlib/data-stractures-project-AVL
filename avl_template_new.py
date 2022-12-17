@@ -53,8 +53,6 @@ class AVLNode(object):
 		self.p_right = right
 		self.p_parent = parent
 		
-		# for accompanying search tree, pointer to the list tree node
-		self.p_list_node = None
 
 		# padding with virtual nodes
 		if (value != None):
@@ -119,8 +117,7 @@ class AVLNode(object):
 			return self.getSize()
 		elif name == "balance_factor":
 			return self.getBalanceFactor()
-		elif name == "list_node":
-			return self.getListNode()
+		
 
 
 	def __setattr__(self, name, value):
@@ -142,24 +139,20 @@ class AVLNode(object):
 			self.setHeight(value)
 		elif name == "size":
 			self.setSize(value)
-		elif name == "list_node":
-			self.setListNode(value)
 		else: # default behavior
 			object.__setattr__(self, name, value)
 		
 	
-	def copyForSort(self, set_list_node = False):
+	def copyForSort(self):
 		"""creates a copy of the node and its children.
 
 		@pre: no cycles in the subtree
 		@pre: ignores the parent of the node we start from
-		@type set_list_node: bool
-		@param set_list_node: wether to set list_node to the node copied from
 		@rtype: AVLNode
 		@returns: a new node that has the same value 
 				and copies the children too.
 		"""
-		def rec_copy(node, parent_copy, set_list_node):
+		def rec_copy(node, parent_copy):
 			if (node == None):
 				# should never happen
 				return None
@@ -172,16 +165,14 @@ class AVLNode(object):
 								node.getHeight(),
 								node.getSize(),
 								parent_copy)
-			if set_list_node:
-				node_copy.setListNode(node)
-
-			left_copy = rec_copy(node.getLeft(), node_copy, set_list_node)
-			right_copy = rec_copy(node.getRight(), node_copy, set_list_node)
+			
+			left_copy = rec_copy(node.getLeft(), node_copy)
+			right_copy = rec_copy(node.getRight(), node_copy)
 			node_copy.setLeft(left_copy)
 			node_copy.setRight(right_copy)
 			return node_copy
 
-		return rec_copy(self, None, set_list_node)
+		return rec_copy(self, None)
 	
 
 	def getLeft(self):
@@ -298,16 +289,6 @@ class AVLNode(object):
 		return rank
 
 
-	def getListNode(self):
-		"""gets the pointer to the node in the list tree.
-		for use in accompanying search tree.
-		
-		@rtype: AVLNode
-		@return: a node in the list tree with the same value
-		"""
-		return self.p_list_node
-
-
 	def setLeft(self, node):
 		"""sets left child without rebalance
 
@@ -383,27 +364,6 @@ class AVLNode(object):
 		@warning: Doesn't check for correctness
 		"""
 		self.p_height = h
-
-
-	def setListNode(self, node):
-		"""sets the pointer to the node
-		for use in accompanying search tree, points to the other tree
-		
-		@type node: AVLNode
-		@param node: node in the list tree
-		"""
-		self.p_list_node = node
-
-
-	def removeListNodePointers(self):
-		"""sets all list_node pointers in self subtree to None
-		
-		@pre: virtual nodes have no children
-		"""
-		self.setListNode(None)
-		if self.isRealNode():
-			self.getRight().removeListNodePointers()
-			self.getLeft().removeListNodePointers()
 
 
 	def updateSize(self):
@@ -589,6 +549,7 @@ class AVLNode(object):
 		childs_left = child.getLeft()
 
 		# rotate
+		childs_left.setParent(self)
 		self.setRight(childs_left)
 		self.setParent(child)
 		child.setLeft(self)
@@ -620,6 +581,7 @@ class AVLNode(object):
 		childs_right = child.getRight()
 
 		# rotate
+		childs_right.setParent(self)
 		self.setLeft(childs_right)
 		self.setParent(child)
 		child.setRight(self)
@@ -694,7 +656,6 @@ class AVLTreeList(object):
 	def __init__(self, size = 0, root = AVLNode.virtualNode()):
 		self.size = size
 		self.root = root
-		self.sorted_root = AVLNode.virtualNode()
 
 
 	"""returns whether the list is empty
@@ -770,8 +731,6 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def insert(self, i, val):	
-		# align the search tree
-		self.insertToSearchTree(AVLNode(val, None, None, 0, 1, None))
 
 		if self.size == 0:
 			self.root = AVLNode(val, None, None, 0, 1, None)
@@ -818,9 +777,6 @@ class AVLTreeList(object):
 	def delete(self, i):
 		nodeToDelete = self.retrieveNode(i)
 		parent = nodeToDelete.getParent()
-		
-		# align the search tree
-		self.deleteFromSearchTree(nodeToDelete)
 
 		# nodeToDelete is a leaf.
 		if not nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
@@ -963,134 +919,6 @@ class AVLTreeList(object):
 
 		return numOfRotations
 
-
-		nodeToDelete.rebalance()
-
-	
-	def searchInSorted(self, value):
-		"""searches into the search tree
-		
-		@type value: str
-		@param value: value to search for
-		@pre: value != None
-		@rtype: AVLNode
-		@return: the node where value is or should be (if not in the search tree)
-		"""
-		if value == None:
-			raise Exception("cannot look for a virtual node")
-
-		node = self.getSortedRoot()
-		while node.isRealNode():
-			node_value = node.getValue()
-			if value == node_value:
-				return node
-			elif value > node_value:
-				node = node.getRight()
-			else: # value < node_value
-				node = node.getLeft()
-		return node
-
-
-	def insertToSearchTree(self, list_node):
-		"""insert to the avl search tree
-		called after inserting to the list 
-		if there's more then one occurance, insert right next to it.
-
-		@type list_node: AVLNode
-		@param list_node: pointer to the node inserted to the list
-		@pre: list_node is a real node
-		"""
-		value = list_node.getValue()
-		place_to_insert = self.searchInSorted(value)
-		
-		if place_to_insert.isRealNode():
-			# this is a repeating value, check for children
-			if not place_to_insert.hasLeft():
-				place_to_insert = place_to_insert.getLeft()
-			elif not place_to_insert.hasRight():
-				place_to_insert = place_to_insert.getRight()
-			else: # has both children
-				successor = place_to_insert.getSuccessor()
-				# successor has no left child
-				place_to_insert = successor.getLeft()
-		
-		place_to_insert.setValue(value)
-		place_to_insert.padWithVirtuals()
-		place_to_insert.setListNode(list_node)
-		place_to_insert.rebalance(is_insert=True)
-
-		# update the root 
-		self.setSortedRoot(place_to_insert.goToRoot())
-
-	
-	def deleteFromSearchTree(self, list_node):
-		"""delete from the avl search tree.
-		
-		@type list_node: AVLNode
-		@param value: pointer to the node inserted to the list
-		"""
-		value = list_node.getValue()
-		node_to_delete = self.searchInSorted(value)
-		if not node_to_delete.isRealNode():
-			return # value is not in the tree
-		
-		# make sure we're deleting the right node
-		if not node_to_delete.getListNode() is list_node:
-			# check right or left or successor.left
-			left = node_to_delete.getLeft()
-			right = node_to_delete.getRight()
-			if left is list_node:
-				node_to_delete = left
-			elif right is list_node:
-				node_to_delete = right
-			else:
-				node_to_delete = node_to_delete.getSuccessor().getLeft()
-			
-
-		has_left = node_to_delete.hasLeft()
-		has_right = node_to_delete.hasRight()
-		if has_right and has_left:
-			# successor must be real because node right child
-			successor = node_to_delete.getSuccessor()
-			
-			# successor has no real left child
-			suc_child = successor.getRight()
-			suc_parent = successor.getParent()
-			if successor is suc_parent.getLeft():
-				suc_parent.setLeft(suc_child)
-			else:
-				suc_parent.setRight(suc_child)
-
-			# replace the value with the successor value
-			node_to_delete.setValue(successor.getValue())
-			node_to_delete.setListNode(successor.getListNode())
-			# rebalance from successor because it was deleted
-			successor.rebalance()
-			self.setSortedRoot(node_to_delete.goToRoot())
-			return
-		
-		# node has either one or no children
-		right = node_to_delete.getRight() # may be virtual
-		left = node_to_delete.getLeft() # may be virtual
-		parent = node_to_delete.getParent() # may be None
-		if parent == None:
-			# this was the root with one child or less
-			if has_left:
-				self.setSortedRoot(left)
-			else: # right is real or no children
-				self.setSortedRoot(right)
-			return # no rebalance because one or no child
-		
-		# bypass node_to_delete
-		if parent.getRight() is node_to_delete:
-			parent.setRight(left if has_left else right)
-		
-		elif parent.getLeft() is node_to_delete:
-			parent.setRight(left if has_left else right)
-		
-		node_to_delete.rebalance()
-		self.setSortedRoot(node_to_delete.goToRoot())
-
 	
 	"""returns the value of the first item in the list
 
@@ -1187,14 +1015,11 @@ class AVLTreeList(object):
 		@rtype: AVLTreeList
 		@returns: new list values are sorted by the info of the original list.
 		"""
-		# we already maintained a search tree, need only to copy it
-		new_list_root = self.sorted_root.copyForSort()
-		new_list_root.removeListNodePointers()
-		new_sorted_root = new_list_root.copyForSort()
-		
-		new_list = AVLTreeList(new_list_root.getSize())
-		new_list.setRoot(new_list_root)
-		new_list.setSortedRoot(new_sorted_root)
+		array = self.listToArray()
+		array.sort()
+		new_list = AVLTreeList()
+		for i, item in enumerate(array):
+			new_list.insert(i, item)
 		return new_list
 
 
@@ -1298,21 +1123,6 @@ class AVLTreeList(object):
 		"""
 		self.root = node
 
-	def getSortedRoot(self):
-		"""gets the root of the search tree in the list
-
-		@rtype: AVLNode
-		@returns: the sorted_root field
-		"""
-		return self.sorted_root
-
-	def setSortedRoot(self, node):
-		"""sets the search tree root to node
-		
-		@type: AVLNode
-		@param node: the new root to the search tree
-		"""
-		self.sorted_root = node
 
 	"""updates the root after rebalancing  
 
