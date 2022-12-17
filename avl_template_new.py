@@ -703,7 +703,7 @@ class AVLTreeList(object):
 	@returns: True if the list is empty, False otherwise
 	"""
 	def empty(self):
-		return self.getRoot().isRealNode()
+		return self.getRoot() is None or not self.getRoot().isRealNode()
 
 
 	"""retrieves the value of the i'th item in the list
@@ -769,7 +769,10 @@ class AVLTreeList(object):
 	@rtype: list
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
-	def insert(self, i, val):
+	def insert(self, i, val):	
+		# align the search tree
+		self.insertToSearchTree(AVLNode(val, None, None, 0, 1, None))
+
 		if self.size == 0:
 			self.root = AVLNode(val, None, None, 0, 1, None)
 			self.size = 1
@@ -815,6 +818,9 @@ class AVLTreeList(object):
 	def delete(self, i):
 		nodeToDelete = self.retrieveNode(i)
 		parent = nodeToDelete.getParent()
+		
+		# align the search tree
+		self.deleteFromSearchTree(nodeToDelete)
 
 		# nodeToDelete is a leaf.
 		if not nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
@@ -1195,18 +1201,33 @@ class AVLTreeList(object):
 	"""permute the info values of the list 
 
 	@rtype: list
-	@returns: an AVLTreeList where the values are permuted randomly by the info of the original list. ##Use Randomness
+	@returns: an AVLTreeList where the values are permuted randomly by the info of the original list.
 	"""
 	def permutation(self):
 		lst = self.listToArray()
-		random.shuffle(lst)
+		lst = self.shuffle(lst)
 
-		tree = AVLTreeList(len(lst))
+		tree = AVLTreeList()
 
 		for i in range (len(lst)):
 			tree.insert(i, lst[i])
 		
 		return tree
+
+
+	""" A function to generate a random permutation of arr[]
+
+	@rtype: list
+	@returns: a list where the values are permuted randomly by the info of the original list.
+	"""
+	def shuffle(self, array):
+		arrLength = len(array)
+
+		for i in range(arrLength - 1, 0, -1):
+			j = random.randint(0, i)
+			array[i], array[j] = array[j], array[i]
+		
+		return array
 
 
 	"""concatenates lst to self
