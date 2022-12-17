@@ -589,6 +589,7 @@ class AVLNode(object):
 		childs_left = child.getLeft()
 
 		# rotate
+		childs_left.setParent(self)
 		self.setRight(childs_left)
 		self.setParent(child)
 		child.setLeft(self)
@@ -620,6 +621,7 @@ class AVLNode(object):
 		childs_right = child.getRight()
 
 		# rotate
+		childs_right.setParent(self)
 		self.setLeft(childs_right)
 		self.setParent(child)
 		child.setRight(self)
