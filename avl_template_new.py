@@ -783,7 +783,7 @@ class AVLTreeList(object):
 			return self.deleteLeaf(nodeToDelete, parent)
 			
 		# nodeToDelete has only one child.
-		if not nodeToDelete.hasRight() and nodeToDelete.hasLeft() or nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
+		elif (not nodeToDelete.hasRight() and nodeToDelete.hasLeft()) or (nodeToDelete.hasRight() and not nodeToDelete.hasLeft()):
 			return self.deleteNodeWithOneChild(nodeToDelete, parent)
 
 		# nodeToDelete has two childes.
@@ -800,8 +800,10 @@ class AVLTreeList(object):
 	"""
 	def deleteLeaf(self, nodeToDelete, parent):
 		virtNode = AVLNode.virtualNode(parent)
-			
-		if parent.getRight() is nodeToDelete:
+		
+		if parent == None:
+			numOfRotations = 0
+		elif parent.getRight() is nodeToDelete:
 			parent.right = virtNode
 			numOfRotations = parent.getRight().rebalance()
 		else:
@@ -826,9 +828,12 @@ class AVLTreeList(object):
 		if not nodeToDelete.hasRight() and nodeToDelete.hasLeft():
 			if parent is None:
 				self.root = nodeToDelete.getLeft()
-				nodeToDelete.getLeft().parent = self.root
+				nodeToDelete.getLeft().parent = parent
 			else:
-				parent.setLeft(nodeToDelete.getLeft())
+				if parent.getRight() is nodeToDelete:
+					parent.setRight(nodeToDelete.getLeft())
+				else: # parent.left is nodeToDelete
+					parent.setLeft(nodeToDelete.getLeft())
 				nodeToDelete.getLeft().parent = parent
 
 			
@@ -841,9 +846,12 @@ class AVLTreeList(object):
 		elif nodeToDelete.hasRight() and not nodeToDelete.hasLeft():
 			if parent is None:
 				self.root = nodeToDelete.getRight()
-				nodeToDelete.getRight().parent = self.root
+				nodeToDelete.getRight().parent = parent
 			else:
-				parent.setRight(nodeToDelete.getRight())
+				if parent.getRight() is nodeToDelete:
+					parent.setRight(nodeToDelete.getRight())
+				else: # parent.left is nodeToDelete
+					parent.setLeft(nodeToDelete.getRight())
 				nodeToDelete.getRight().parent = parent
 
 			numOfRotations = nodeToDelete.getRight().rebalance()
@@ -864,60 +872,13 @@ class AVLTreeList(object):
 	def deleteNodeWithTwoChild(self, nodeToDelete, parent):
 		successor = nodeToDelete.getSuccessor()
 		successorParent = successor.getParent()
-
-		replaceDeletedNode = AVLNode(
-			successor.value,
-		 	nodeToDelete.getLeft(),
-			nodeToDelete.getRight(),
-			nodeToDelete.getHeight(),
-			nodeToDelete.size,
-			parent)
-
-		if parent is not None:
-			if parent.hasRight():
-				if parent.getRight() is nodeToDelete:
-					parent.setRight(replaceDeletedNode)
-		
-			elif parent.hasLeft():
-				if parent.getLeft() is nodeToDelete:
-					parent.setLeft(replaceDeletedNode)
-		else:
-			if self.getRoot():
-				if self.getRoot() is nodeToDelete:
-					self.root = replaceDeletedNode
-		
-			elif self.getRoot():
-				if self.getRoot() is nodeToDelete:
-					self.root = replaceDeletedNode
-
-		nodeToDelete.getRight().parent = replaceDeletedNode
-		nodeToDelete.getLeft().parent = replaceDeletedNode
-
-		if successorParent is nodeToDelete:
-			if replaceDeletedNode.getRight() is successor:
-				replaceDeletedNode.setRight(successor.getRight())
-			if replaceDeletedNode.getLeft() is successor:
-				replaceDeletedNode.setLeft(successor.getLeft())
-		else:	
-			successorParent.setLeft(successor.getRight())
-			successor.getRight().parent = successorParent
-
-		if successorParent is nodeToDelete:
-			if nodeToDelete.getRight() is successor:
-				successor.setRight(nodeToDelete.getRight().getRight())
-				successor.setLeft(nodeToDelete.getLeft())
-			elif nodeToDelete.getLeft() is successor:
-				successor.setRight(nodeToDelete.getRight())
-				successor.setLeft(nodeToDelete.getLeft().getLeft())				
-		else: 
-			successor.setRight(nodeToDelete.getRight())
-			successor.setLeft(nodeToDelete.getLeft())
-
-		numOfRotations = nodeToDelete.rebalance()
-		self.size -=1
-		self.updateRoot()
-
-		return numOfRotations
+		# replace with the successor
+		nodeToDelete.setValue(successor.getValue())
+		# delete the successor
+		if successor.hasRight():
+			return self.deleteNodeWithOneChild(successor, successorParent)
+		else: # successor is a leaf
+			return self.deleteLeaf(successor, successorParent)
 
 	
 	"""returns the value of the first item in the list
