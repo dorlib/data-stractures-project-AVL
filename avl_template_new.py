@@ -27,7 +27,7 @@ class AVLNode(object):
 				height: length of the longest path from the node to a leaf @type: int \n
 				size: the number of nodes in the subtree @type: int
 		"""
-	def __init__(self, value, left, right, height=None, size=None, 
+	def __init__(self, value, left=None, right=None, height=None, size=None, 
 				parent=None):
 		"""Constructor, creates a real node.
 		if left or right are None, inserts virtual nodes instead
