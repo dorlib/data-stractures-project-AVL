@@ -865,60 +865,11 @@ class AVLTreeList(object):
 		successor = nodeToDelete.getSuccessor()
 		successorParent = successor.getParent()
 
-		replaceDeletedNode = AVLNode(
-			successor.value,
-		 	nodeToDelete.getLeft(),
-			nodeToDelete.getRight(),
-			nodeToDelete.getHeight(),
-			nodeToDelete.size,
-			parent)
-
-		if parent is not None:
-			if parent.hasRight():
-				if parent.getRight() is nodeToDelete:
-					parent.setRight(replaceDeletedNode)
-		
-			elif parent.hasLeft():
-				if parent.getLeft() is nodeToDelete:
-					parent.setLeft(replaceDeletedNode)
+		nodeToDelete.setValue(successor.getValue())
+		if successor.hasRight():
+			return self.deleteNodeWithOneChild(successor, successorParent)
 		else:
-			if self.getRoot():
-				if self.getRoot() is nodeToDelete:
-					self.root = replaceDeletedNode
-		
-			elif self.getRoot():
-				if self.getRoot() is nodeToDelete:
-					self.root = replaceDeletedNode
-
-		nodeToDelete.getRight().parent = replaceDeletedNode
-		nodeToDelete.getLeft().parent = replaceDeletedNode
-
-		if successorParent is nodeToDelete:
-			if replaceDeletedNode.getRight() is successor:
-				replaceDeletedNode.setRight(successor.getRight())
-			if replaceDeletedNode.getLeft() is successor:
-				replaceDeletedNode.setLeft(successor.getLeft())
-		else:	
-			successorParent.setLeft(successor.getRight())
-			successor.getRight().parent = successorParent
-
-		if successorParent is nodeToDelete:
-			if nodeToDelete.getRight() is successor:
-				successor.setRight(nodeToDelete.getRight().getRight())
-				successor.setLeft(nodeToDelete.getLeft())
-			elif nodeToDelete.getLeft() is successor:
-				successor.setRight(nodeToDelete.getRight())
-				successor.setLeft(nodeToDelete.getLeft().getLeft())				
-		else: 
-			successor.setRight(nodeToDelete.getRight())
-			successor.setLeft(nodeToDelete.getLeft())
-
-		numOfRotations = nodeToDelete.rebalance()
-		self.size -=1
-		self.updateRoot()
-
-		return numOfRotations
-
+			return self.deleteLeaf(successor, successorParent)
 	
 	"""returns the value of the first item in the list
 
@@ -1193,5 +1144,3 @@ class AVLTreeList(object):
 			root = root.getParent()
 		
 		self.root = root
-
-
