@@ -1076,15 +1076,15 @@ class AVLTreeList(object):
 	"""
 	def concat(self, lst):
 		absDiff = abs(self.getRoot().getHeight() - lst.getRoot().getHeight())
-		shorterTree = self
-		LongerTree = lst
+		originalTree = self
+		givenTree = lst
 
-		b = LongerTree.getRoot()
-		while b.getHeight() > shorterTree.getRoot().getHeight():
+		b = givenTree.getRoot()
+		while b.getHeight() > originalTree.getRoot().getHeight():
 			b = b.getLeft()
 		
-		maxInShort = shorterTree.findMaximum()
-		shorterTree.delete(shorterTree.size - 1)
+		maxInShort = originalTree.findMaximum()
+		originalTree.delete(originalTree.size - 1)
 
 		# if be is not the root of lst
 		if b.getParent() != None:
@@ -1094,12 +1094,12 @@ class AVLTreeList(object):
 			maxInShort.right = b
 			b.parent = maxInShort
 
-			maxInShort.left = shorterTree.getRoot()
+			maxInShort.left = originalTree.getRoot()
 			maxInShort.updateHelpers()
-			shorterTree.getRoot().parent = maxInShort
+			originalTree.getRoot().parent = maxInShort
 
 			maxInShort.rebalance()
-			self.root = LongerTree.root
+			self.root = givenTree.root
 
 		# if b is the root of lst
 		else:
@@ -1107,9 +1107,9 @@ class AVLTreeList(object):
 			maxInShort.right = b
 			b.parent = maxInShort
 
-			maxInShort.left = shorterTree.getRoot()
+			maxInShort.left = originalTree.getRoot()
 			maxInShort.updateHelpers()
-			shorterTree.getRoot().parent = maxInShort
+			originalTree.getRoot().parent = maxInShort
 
 			self.root = maxInShort
 
