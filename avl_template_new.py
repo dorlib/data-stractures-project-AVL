@@ -879,7 +879,7 @@ class AVLTreeList(object):
 			return self.deleteNodeWithOneChild(successor, successorParent)
 		else: # successor is a leaf
 			return self.deleteLeaf(successor, successorParent)
-
+      
 	
 	"""returns the value of the first item in the list
 
@@ -944,7 +944,6 @@ class AVLTreeList(object):
 		return self.listToArrayRec(self.root)
 
 	"""recursive helper function for listToArray 
-
 
 	@rtype: list
 	@returns: a list of strings representing the data structure
@@ -1109,19 +1108,28 @@ class AVLTreeList(object):
 	@returns: the first index that contains val, -1 if not found.
 	"""
 	def search(self, val):
-		if not self.root.isRealNode():
-			return -1
+		current = self.getRoot()
+		stack = [] 
+		result = []
+		
+		while True:
+			if current.isRealNode():
+				stack.append(current)
+				current = current.getLeft()
 
-		if self.root == val:
-			return self.root.getRank() - 1
-
-		res1 = self.search(val)
-		if res1 != None:
-			return res1
-
-		res2 = self.search(val)
-		if res2 != None:
-			return res2		
+			elif(stack):
+				current = stack.pop()
+				result.append(current)
+				current = current.getRight()
+	
+			else:
+				break
+		
+		for node in result:
+			if node.value == val:
+				return node.getRank() - 1
+			else:
+				return -1
 
 
 	"""returns the root of the tree representing the list
@@ -1154,5 +1162,3 @@ class AVLTreeList(object):
 			root = root.getParent()
 		
 		self.root = root
-
-
