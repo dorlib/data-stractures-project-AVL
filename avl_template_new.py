@@ -775,6 +775,9 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def delete(self, i):
+		if self.length() < i:
+			return -1
+
 		nodeToDelete = self.retrieveNode(i)
 		parent = nodeToDelete.getParent()
 
