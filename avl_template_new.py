@@ -1072,21 +1072,45 @@ class AVLTreeList(object):
 	@returns: the absolute value of the difference between the height of the AVL trees joined
 	"""
 	def concat(self, lst):
-		absDiff = abs(self.root.height - lst.root.height)
+		absDiff = abs(self.getRoot().getHeight() - lst.getRoot().getHeight())
+		shorterTree = self
+		LongerTree = lst
+
+		b = LongerTree.getRoot()
+		while b.getHeight() > shorterTree.getRoot().getHeight():
+			b = b.getLeft()
 		
-		LastNodeInSelf = self.retrieveNode(self.size)
-		firstNodeInLst = lst.retrieveNode(self.size)
+		maxInShort = shorterTree.retrieveNode(shorterTree.size - 1)
+		maxInShort.getParent().right = AVLNode.virtualNode()
 
-		LastNodeInSelf.right = firstNodeInLst
+		# if be is the root of lst
+		if b.getParent() != None:
+			maxInShort.parent = b.getParent()
+			maxInShort.getParent().left = maxInShort
 
-		parent = firstNodeInLst.parent
-		son =  firstNodeInLst
-		while parent:
-			son.right = parent
-			parent.left = AVLNode.virtualNode()
-			son = parent
-			parent = parent.parent
+			maxInShort.right = b
+			b.parent = maxInShort
 
+			maxInShort.left = shorterTree.getRoot()
+			maxInShort.setHeight(max(maxInShort.getRight().getHeight(), maxInShort.getLeft().getHeight())+1)
+			shorterTree.getRoot().parent = maxInShort
+
+			maxInShort.rebalance()
+			self.root = LongerTree.root
+
+		# if b is not the root of lst
+		else:
+			maxInShort.parent = None
+			maxInShort.right = b
+			b.parent = maxInShort
+
+			maxInShort.left = shorterTree.getRoot()
+			maxInShort.setHeight(max(maxInShort.getRight().getHeight(), maxInShort.getLeft().getHeight())+1)
+			shorterTree.getRoot().parent = maxInShort
+
+			self.root = maxInShort
+
+		self.size += lst.size
 		return absDiff
 
 
