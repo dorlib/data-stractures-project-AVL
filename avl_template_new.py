@@ -1080,10 +1080,10 @@ class AVLTreeList(object):
 		while b.getHeight() > shorterTree.getRoot().getHeight():
 			b = b.getLeft()
 		
-		maxInShort = shorterTree.retrieveNode(shorterTree.size - 1)
-		maxInShort.getParent().right = AVLNode.virtualNode()
+		maxInShort = shorterTree.findMaximum()
+		shorterTree.delete(shorterTree.size - 1)
 
-		# if be is the root of lst
+		# if be is not the root of lst
 		if b.getParent() != None:
 			maxInShort.parent = b.getParent()
 			maxInShort.getParent().left = maxInShort
@@ -1092,20 +1092,20 @@ class AVLTreeList(object):
 			b.parent = maxInShort
 
 			maxInShort.left = shorterTree.getRoot()
-			maxInShort.setHeight(max(maxInShort.getRight().getHeight(), maxInShort.getLeft().getHeight())+1)
+			maxInShort.updateHelpers()
 			shorterTree.getRoot().parent = maxInShort
 
 			maxInShort.rebalance()
 			self.root = LongerTree.root
 
-		# if b is not the root of lst
+		# if b is the root of lst
 		else:
 			maxInShort.parent = None
 			maxInShort.right = b
 			b.parent = maxInShort
 
 			maxInShort.left = shorterTree.getRoot()
-			maxInShort.setHeight(max(maxInShort.getRight().getHeight(), maxInShort.getLeft().getHeight())+1)
+			maxInShort.updateHelpers()
 			shorterTree.getRoot().parent = maxInShort
 
 			self.root = maxInShort
