@@ -775,6 +775,9 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def delete(self, i):
+		if self.length() < i:
+			return -1
+
 		nodeToDelete = self.retrieveNode(i)
 		parent = nodeToDelete.getParent()
 
@@ -1082,21 +1085,45 @@ class AVLTreeList(object):
 	@returns: the absolute value of the difference between the height of the AVL trees joined
 	"""
 	def concat(self, lst):
-		absDiff = abs(self.root.height - lst.root.height)
+		absDiff = abs(self.getRoot().getHeight() - lst.getRoot().getHeight())
+		originalTree = self
+		givenTree = lst
+
+		b = givenTree.getRoot()
+		while b.getHeight() > originalTree.getRoot().getHeight():
+			b = b.getLeft()
 		
-		LastNodeInSelf = self.retrieveNode(self.size)
-		firstNodeInLst = lst.retrieveNode(self.size)
+		maxInShort = originalTree.findMaximum()
+		originalTree.delete(originalTree.size - 1)
 
-		LastNodeInSelf.right = firstNodeInLst
+		# if be is not the root of lst
+		if b.getParent() != None:
+			maxInShort.parent = b.getParent()
+			maxInShort.getParent().left = maxInShort
 
-		parent = firstNodeInLst.parent
-		son =  firstNodeInLst
-		while parent:
-			son.right = parent
-			parent.left = AVLNode.virtualNode()
-			son = parent
-			parent = parent.parent
+			maxInShort.right = b
+			b.parent = maxInShort
 
+			maxInShort.left = originalTree.getRoot()
+			maxInShort.updateHelpers()
+			originalTree.getRoot().parent = maxInShort
+
+			maxInShort.rebalance()
+			self.root = givenTree.root
+
+		# if b is the root of lst
+		else:
+			maxInShort.parent = None
+			maxInShort.right = b
+			b.parent = maxInShort
+
+			maxInShort.left = originalTree.getRoot()
+			maxInShort.updateHelpers()
+			originalTree.getRoot().parent = maxInShort
+
+			self.root = maxInShort
+
+		self.size += lst.size
 		return absDiff
 
 
