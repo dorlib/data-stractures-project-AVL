@@ -676,6 +676,9 @@ class AVLTreeList(object):
 	@returns: the the value of the i'th item in the list
 	"""
 	def retrieve(self, i):
+		if self.length() < i:
+			return None
+
 		node = self.getRoot()
 		index = i + 1
 
