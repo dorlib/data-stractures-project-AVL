@@ -16,17 +16,17 @@ In this project we will implement an ADT of a List while using an AVL tree. </br
 
 | Function     | Description                                                                             | Time Complexity | 
 |:-------------|:----------------------------------------------------------------------------------------|:----------------|
-| getHeight()  | returns the height field of self.                                                       | O(1)            |
-| getValue()   | returns the value field of self.                                                        | O(1)            |
-| getLeft()    | returns the left child of self. if self is a leaf, his children will be virtual nodes.  | O(1)            |
-| getRight()   | returns the right child of self. if self is a leaf, his children will be virtual nodes. | O(1)            |
-| getParent()  | returns the parent of self. if self is the root, returns None.                          | O(1)            |
-| setHeight()  | sets the height of self.                                                                | O(1)            |
-| setValue()   | sets the value of self.                                                                 | O(1)            |
-| setLeft()    | sets the left child self node without rebalance.                                        | O(1)            | 
-| setRight()   | sets the right child self node without rebalance.                                       | O(1)            |
-| setParent()  | sets the parent of self and update the parent node.                                     | O(1)            |
-| isRealNode() | returns whether self is not a virtual node.                                             | O(1)            |
+| getHeight()  | Returns the height field of self.                                                       | O(1)            |
+| getValue()   | Returns the value field of self.                                                        | O(1)            |
+| getLeft()    | Returns the left child of self. if self is a leaf, his children will be virtual nodes.  | O(1)            |
+| getRight()   | Returns the right child of self. if self is a leaf, his children will be virtual nodes. | O(1)            |
+| getParent()  | Returns the parent of self. if self is the root, returns None.                          | O(1)            |
+| setHeight()  | Sets the height of self.                                                                | O(1)            |
+| setValue()   | Sets the value of self.                                                                 | O(1)            |
+| setLeft()    | Sets the left child self node without rebalance.                                        | O(1)            | 
+| setRight()   | Sets the right child self node without rebalance.                                       | O(1)            |
+| setParent()  | Sets the parent of self and update the parent node.                                     | O(1)            |
+| isRealNode() | Returns whether self is not a virtual node.                                             | O(1)            |
 
 ## AVL Tree List Class
 
