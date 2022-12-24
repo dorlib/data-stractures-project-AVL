@@ -7,6 +7,7 @@ In this project we will implement an ADT of a List while using an AVL tree. </br
     - [functions & time complexity table](#AVLNode-functions-&-time-complexity)
 - [AVL Tree List class](#AVL-Tree-List-Class)
     - [functions & time complexity table](#AVLTreeList-functions-&-time-complexity)
+- [Contributing](#Contributing)    
 - [Maintainers](#maintainers)
 ## AVL Node Class
 
