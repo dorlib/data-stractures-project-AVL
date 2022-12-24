@@ -653,9 +653,11 @@ class AVLTreeList(object):
 	Constructor, you are allowed to add more fields.  
 
 	"""
-	def __init__(self, size = 0, root = AVLNode.virtualNode()):
+	def __init__(self, size = 0, root = AVLNode.virtualNode(), firstNode=None, lastNode=None):
 		self.size = size
 		self.root = root
+		self.firstNode = firstNode
+		self.lastNode = lastNode
 
 
 	"""returns whether the list is empty
@@ -692,7 +694,7 @@ class AVLTreeList(object):
 				node = node.left
 				continue
 
-			node = node.right
+			node = node.getRight()
 			index = (index-rank)
 
 
@@ -737,16 +739,17 @@ class AVLTreeList(object):
 
 		if self.size == 0:
 			self.root = AVLNode(val, None, None, 0, 1, None)
+			self.firstNode = self.lastNode = self.root
 			self.size = 1
 			return 0
 
 		if i == self.length():
-			max = self.findMaximum()
+			max = self.getMaximum()
 			max.right = AVLNode(val, None, None, 0, 1, max)
 			self.size += 1
 			
 			numOfRotations = max.right.rebalance(True)
-			self.updateRoot()
+			self.updatePointers()
 			return numOfRotations
 
 		biggerNode = self.retrieveNode(i)
@@ -756,7 +759,7 @@ class AVLTreeList(object):
 			self.size += 1
 			
 			numOfRotations = biggerNode.left.rebalance(True)
-			self.updateRoot()
+			self.updatePointers()
 			return numOfRotations
 
 		else:
@@ -765,7 +768,7 @@ class AVLTreeList(object):
 			self.size += 1
 
 			numOfRotations =  pred.right.rebalance(True)
-			self.updateRoot()
+			self.updatePointers()
 			return numOfRotations
 
 	
@@ -817,7 +820,7 @@ class AVLTreeList(object):
 			numOfRotations = parent.getLeft().rebalance()
 
 		self.size -= 1
-		self.updateRoot()
+		self.updatePointers()
 
 		return numOfRotations 
 
@@ -845,7 +848,7 @@ class AVLTreeList(object):
 			
 			numOfRotations = nodeToDelete.getLeft().rebalance()
 			self.size -=1
-			self.updateRoot()
+			self.updatePointers()
 
 			return numOfRotations
 
@@ -862,7 +865,7 @@ class AVLTreeList(object):
 
 			numOfRotations = nodeToDelete.getRight().rebalance()
 			self.size -=1
-			self.updateRoot()
+			self.updatePointers()
 
 			return numOfRotations
 
@@ -896,7 +899,7 @@ class AVLTreeList(object):
 		if self.size == 0:
 			return None
 
-		return str(self.findMinimum().value)
+		return str(self.firstNode.value)
 
 	"""returns the value of the last item in the list
 
@@ -907,7 +910,7 @@ class AVLTreeList(object):
 		if self.size == 0:
 			return None
 
-		return str(self.findMaximum().value)
+		return str(self.lastNode.value)
 
 
 	"""find the node with the minimum rank in the tree. 
@@ -916,7 +919,7 @@ class AVLTreeList(object):
 	@rtype: AVLNode
 	@returns: node with the minimum rank in the tree. 
 	"""
-	def findMinimum(self):
+	def getMinimum(self):
 		node = self.getRoot()
 		while node.isRealNode():
 			node = node.left
@@ -930,7 +933,7 @@ class AVLTreeList(object):
 	@rtype: AVLNode
 	@returns: node with the maximum rank in the tree. 
 	"""
-	def findMaximum(self):
+	def getMaximum(self):
 		node = self.getRoot()
 		while node.isRealNode():
 			node = node.right
@@ -1028,7 +1031,7 @@ class AVLTreeList(object):
 			# this is a repeating value, check for children
 			if not place_to_insert.hasLeft():
 				# insert to the left
-				place_to_insert =  place_to_insert.getLeft()
+				place_to_insert = place_to_insert.getLeft()
 
 			elif not place_to_insert.hasRight():
 				# insert to the right
@@ -1043,8 +1046,8 @@ class AVLTreeList(object):
 		place_to_insert.padWithVirtuals()
 		place_to_insert.rebalance(is_insert=True)
 		self.size += 1
-		# update the root 
-		self.updateRoot()
+		# update the pointers 
+		self.updatePointers()
 
 
 
@@ -1096,35 +1099,35 @@ class AVLTreeList(object):
 		while b.getHeight() > originalTree.getRoot().getHeight():
 			b = b.getLeft()
 		
-		maxInShort = originalTree.findMaximum()
+		maxInOriginal = originalTree.lastNode
 		originalTree.delete(originalTree.size - 1)
 
-		# if be is not the root of lst
+		# if b is not the root of lst
 		if b.getParent() != None:
-			maxInShort.parent = b.getParent()
-			maxInShort.getParent().left = maxInShort
+			maxInOriginal.parent = b.getParent()
+			maxInOriginal.getParent().left = maxInOriginal
 
-			maxInShort.right = b
-			b.parent = maxInShort
+			maxInOriginal.right = b
+			b.parent = maxInOriginal
 
-			maxInShort.left = originalTree.getRoot()
-			maxInShort.updateHelpers()
-			originalTree.getRoot().parent = maxInShort
+			maxInOriginal.left = originalTree.getRoot()
+			maxInOriginal.updateHelpers()
+			originalTree.getRoot().parent = maxInOriginal
 
-			maxInShort.rebalance()
+			maxInOriginal.rebalance()
 			self.root = givenTree.root
 
 		# if b is the root of lst
 		else:
-			maxInShort.parent = None
-			maxInShort.right = b
-			b.parent = maxInShort
+			maxInOriginal.parent = None
+			maxInOriginal.right = b
+			b.parent = maxInOriginal
 
-			maxInShort.left = originalTree.getRoot()
-			maxInShort.updateHelpers()
-			originalTree.getRoot().parent = maxInShort
+			maxInOriginal.left = originalTree.getRoot()
+			maxInOriginal.updateHelpers()
+			originalTree.getRoot().parent = maxInOriginal
 
-			self.root = maxInShort
+			self.root = maxInOriginal
 
 		self.size += lst.size
 		return absDiff
@@ -1181,7 +1184,6 @@ class AVLTreeList(object):
 		"""
 		self.root = node
 
-
 	"""updates the root after rebalancing  
 
 	"""
@@ -1192,3 +1194,16 @@ class AVLTreeList(object):
 			root = root.getParent()
 		
 		self.root = root
+
+	"""updates the root, lastNode and firstNode after rebalancing  
+
+	"""
+	def updatePointers(self):
+		# update root
+		self.updateRoot()
+
+		# update firstNode
+		self.firstNode = self.getMaximum()
+
+		# update lastNode
+		self.lastNode = self.getMinimum()
