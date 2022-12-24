@@ -744,7 +744,7 @@ class AVLTreeList(object):
 			return 0
 
 		if i == self.length():
-			max = self.getMaximum()
+			max = self.findLastNode()
 			max.right = AVLNode(val, None, None, 0, 1, max)
 			self.size += 1
 			
@@ -913,13 +913,13 @@ class AVLTreeList(object):
 		return str(self.lastNode.value)
 
 
-	"""find the node with the minimum rank in the tree. 
+	"""find the first node in the tree. 
 
 	@pre: self.length > 0 
 	@rtype: AVLNode
-	@returns: node with the minimum rank in the tree. 
+	@returns: the first node in the tree. 
 	"""
-	def getMinimum(self):
+	def findFirstNode(self):
 		node = self.getRoot()
 		while node.isRealNode():
 			node = node.left
@@ -927,13 +927,13 @@ class AVLTreeList(object):
 		return node.parent
 
 
-	"""find the node with the maximum rank in the tree. 
+	"""find the last node in the tree. 
 
 	@pre: self.length > 0 
 	@rtype: AVLNode
-	@returns: node with the maximum rank in the tree. 
+	@returns: the last node in the tree. 
 	"""
-	def getMaximum(self):
+	def findLastNode(self):
 		node = self.getRoot()
 		while node.isRealNode():
 			node = node.right
@@ -966,6 +966,36 @@ class AVLTreeList(object):
 
 		return leftList + [root.getValue()] + rightList
 	
+
+	@staticmethod
+	def arrayToList(arr):
+		""" Turns arr to a list
+
+		@type arr: list
+		@param arr: array to turn into a list
+		"""
+		def arrToList_rec(arr, start, end, parent):
+			""" act as if arr is from start (inclusive)
+			to end (not inclusive).
+			"""
+			if start >= end:
+				return AVLNode.virtualNode(parent)
+			mid = start + (end - start)//2
+			root = AVLNode(arr[mid], parent=parent)
+			left = arrToList_rec(arr, start, mid, root)
+			right = arrToList_rec(arr, mid+1, end, root)
+			
+			root.setLeft(left)
+			root.setRight(right)
+			root.updateHelpers()
+			return root
+		if len(arr) == 0:
+			return AVLTreeList(0)
+
+		lst_root = arrToList_rec(arr, 0, len(arr), None)
+		lst = AVLTreeList(len(arr), lst_root)
+		lst.updatePointers()
+		return lst
 
 	"""returns the size of the list 
 
@@ -1060,10 +1090,7 @@ class AVLTreeList(object):
 		lst = self.listToArray()
 		lst = self.shuffle(lst)
 
-		tree = AVLTreeList()
-
-		for i in range (len(lst)):
-			tree.insert(i, lst[i])
+		tree = AVLTreeList.arrayToList(lst)
 		
 		return tree
 
@@ -1091,28 +1118,55 @@ class AVLTreeList(object):
 	@returns: the absolute value of the difference between the height of the AVL trees joined
 	"""
 	def concat(self, lst):
-		absDiff = abs(self.getRoot().getHeight() - lst.getRoot().getHeight())
+		absDiff = abs(self.root.getHeight() - lst.root.getHeight())
+		
+		# handle case original or given lists are empty
+		if lst.size == 0:
+			return absDiff
+		if self.size == 0:
+			self.root = lst.root
+			self.size = lst.size
+			self.updatePointers()
+			return absDiff
+
+
+		if self.root.getHeight() >= lst.root.getHeight():
+			self.concatSelfIsBigger(lst)
+		else:
+			self.concatGivenIsBigger(lst)
+
+		self.size += lst.size
+		self.updatePointers()
+		return absDiff
+
+	def concatGivenIsBigger(self, givenTree):
+		"""concat if given tree has greater height
+		
+		should only be called from concat
+		@type givenTree: AVLTreeList
+		@param givenTree: tree to concatenate to self
+		"""
 		originalTree = self
-		givenTree = lst
+		
+		maxInOriginal = originalTree.lastNode
+		originalTree.delete(originalTree.size - 1)
 
 		b = givenTree.getRoot()
 		while b.getHeight() > originalTree.getRoot().getHeight():
 			b = b.getLeft()
 		
-		maxInOriginal = originalTree.lastNode
-		originalTree.delete(originalTree.size - 1)
 
 		# if b is not the root of lst
 		if b.getParent() != None:
 			maxInOriginal.parent = b.getParent()
-			maxInOriginal.getParent().left = maxInOriginal
+			b.getParent().left = maxInOriginal
 
 			maxInOriginal.right = b
 			b.parent = maxInOriginal
 
 			maxInOriginal.left = originalTree.getRoot()
 			maxInOriginal.updateHelpers()
-			originalTree.getRoot().parent = maxInOriginal
+			originalTree.root.parent = maxInOriginal
 
 			maxInOriginal.rebalance()
 			self.root = givenTree.root
@@ -1125,13 +1179,52 @@ class AVLTreeList(object):
 
 			maxInOriginal.left = originalTree.getRoot()
 			maxInOriginal.updateHelpers()
-			originalTree.getRoot().parent = maxInOriginal
+			originalTree.root.parent = maxInOriginal
 
 			self.root = maxInOriginal
 
-		self.size += lst.size
-		return absDiff
 
+	def concatSelfIsBigger(self, givenTree):
+		"""concat if the original tree has grater height
+		
+		should only be called from concat
+		@type givenTree: AVLTreeList
+		@param givenTree: tree to concatenate to self
+		"""
+
+		firstInGiven = givenTree.firstNode
+		givenTree.delete(0)
+		
+		b = self.getRoot()
+		while b.getHeight() > givenTree.getRoot().getHeight():
+			b = b.getRight()
+		
+		# if b is not the root of originalTree
+		if b.getParent() != None:
+			firstInGiven.parent = b.getParent()
+			b.getParent().right = firstInGiven
+
+			firstInGiven.left = b
+			b.parent = firstInGiven
+			
+			firstInGiven.right = givenTree.getRoot()
+			firstInGiven.updateHelpers()
+			givenTree.root.setParent(firstInGiven)
+			
+			firstInGiven.rebalance()
+
+		# if b is the root of originalTree
+		else:
+			firstInGiven.parent = None
+			firstInGiven.left = b
+			b.parent = firstInGiven
+
+			firstInGiven.right = givenTree.getRoot()
+			firstInGiven.updateHelpers()
+			givenTree.root.setParent(firstInGiven)
+
+			self.root = firstInGiven
+			
 
 	"""searches for a *value* in the list
 
@@ -1184,26 +1277,28 @@ class AVLTreeList(object):
 		"""
 		self.root = node
 
-	"""updates the root after rebalancing  
+	"""finds the new root of the tree
 
+	@rtype: AVLNode
+	@return: the root of the tree
 	"""
-	def updateRoot(self):
+	def findRoot(self):
 		root = self.root
 
 		while root.getParent() != None:
 			root = root.getParent()
 		
-		self.root = root
+		return root
 
 	"""updates the root, lastNode and firstNode after rebalancing  
 
 	"""
 	def updatePointers(self):
 		# update root
-		self.updateRoot()
+		self.setRoot(self.findRoot())
 
 		# update firstNode
-		self.firstNode = self.getMaximum()
+		self.firstNode = self.findFirstNode()
 
 		# update lastNode
-		self.lastNode = self.getMinimum()
+		self.lastNode = self.findLastNode()
