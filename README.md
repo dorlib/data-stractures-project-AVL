@@ -47,7 +47,7 @@ The tree itself is implemented using the function in the AVLNode class.
 | last()        | Returns the value of the last element in the list and or None if it's empty.                                                               | O(1)            |
 | listToArray() | Returns an array with of the list's elements in the index order, or empyy array if the list is empty.                                      | O(n)            |
 | length()      | Returns the number of elements in the list.                                                                                                | O(1)            | 
-| permutation() | Returns new list with the same elements in random order.                                                                                   | O(n*log(n))     |
+| permutation() | Returns new list with the same elements in random order.                                                                                   | O(n)     |
 | sort()        | Returns new list with the same elements in sorted order.                                                                                   | O(n*log(n))     |
 | concat(lst)   | Concats lst to the end of the list and returns the absulute value of the height difference between the list and lst.                       | O(log(n))       |
 | search(vals)  | Returns the first index of the element with the given value in the list or -1 if it doesnt exist.                                          | O(n)            |
