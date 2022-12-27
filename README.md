@@ -11,6 +11,10 @@ In this project we will implement an ADT of a List while using an AVL tree. </br
 - [Maintainers](#maintainers)
 ## AVL Node Class
 
+AVL Node class implement a Node in the AVL tree (which is not a search tree). The class preserves </br>
+the attribute that the balance factor of each node is between -1 and 1. </br>
+For simplicity we decided the add a virtual node as son for each node whice doesn't has a right son,</br>
+left son, or both. this class is a helper class for AVLTreeList class and the user wont use this class's function directly. 
 
 ### AVLNode functions & time complexity
 
@@ -32,8 +36,7 @@ In this project we will implement an ADT of a List while using an AVL tree. </br
 
 AVL Tree List include the implementation of the list's functionality and the methods that the user will use.
 Behind the scenes the list is an AVL Tree which is not a BST but a ranked tree.
-The tree itself is implemented using the function in the AVLNode class.
-
+The tree itself is implemented using the functions in the AVLNode class.
 
 ### AVLTreeList functions & time complexity
 
