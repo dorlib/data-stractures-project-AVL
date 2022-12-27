@@ -811,7 +811,11 @@ class AVLTreeList(object):
 		virtNode = AVLNode.virtualNode(parent)
 		
 		if parent == None:
-			numOfRotations = 0
+			nodeToDelete = virtNode
+			self.size -= 1
+			self.root = self.firstNode = self.lastNode = nodeToDelete
+			return 0
+
 		elif parent.getRight() is nodeToDelete:
 			parent.right = virtNode
 			numOfRotations = parent.getRight().rebalance()
