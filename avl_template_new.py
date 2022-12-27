@@ -413,75 +413,6 @@ class AVLNode(object):
 			node = node.getParent()
 
 
-	def deepHeights(self):
-		"""searches into the tree recursivly, 
-		updates the height at each node.
-
-		@rtype: int 
-		@return: height of the node
-		@time complexity: O(n)
-		"""
-		# handle virtual nodes		
-		if (not self.isRealNode()):
-			return -1
-		
-		# recursivly find height of left and right nodes
-		left_node = self.getLeft()
-		left_height = -1
-		if (left_node != None):
-			left_height = left_node.deepHeights()
-		
-		right_node = self.getRight()
-		right_height = -1
-		if (right_node != None):
-			right_height = right_node.deepHeights()
-		
-		# set the field
-		self.setHeight(max(right_height, left_height) + 1)
-		return self.getHeight()
-
-
-	def deepBalanceFactor(self):
-		"""serches into the tree recursively,
-		updated the height at each node, 
-		and then returns the balance factor
-		
-		@rtype: int
-		@return: balance factor of the tree
-		@time complexity: O(n)
-		"""
-		self.deepHeights()
-		return self.getBalanceFactor()
-
-
-	def deepSizes(self):
-		"""searches into the tree recursivly, 
-		updates the size at each node.
-
-		@rtype: int 
-		@return: size of the node
-		@time complexity: O(n)
-		"""
-		# handle virtual nodes
-		if (not self.isRealNode()):
-			return 0
-		
-		# recursively find size of left and right nodes
-		left_node = self.getLeft()
-		left_size = 0
-		if (left_node != None):
-			left_size = left_node.deepSizes()
-		
-		right_node = self.getRight()
-		right_size = 0
-		if (right_node != None):
-			right_size = right_node.deepSizes()
-		
-		# set the field
-		self.setSize(left_size + right_size + 1)
-		return self.getSize()
-	
-
 	def isRealNode(self):
 		"""returns whether self is not a virtual node 
 
@@ -625,43 +556,53 @@ class AVLNode(object):
 
 		@rtype: AVLNode
 		@returns: predecessor of the node in the tree.
-		@time complexity: O(1)
+		@time complexity: O(log n)
 		"""
-		node = self.getLeft()
-		while node.isRealNode():
-			node = node.getRight()
-
-		return node.getParent()
-
-
+		return self.getSucOrPred(
+			hasChild=lambda x: x.hasLeft(),
+			getChild=lambda x: x.getLeft(),
+			getOtherChild=lambda x: x.getRight(),
+		)
+				
 	def getSuccessor(self):
 		"""find the successor of the node in the tree. 
 
 		@rtype: AVLNode
 		@returns: successor of the node in the tree.
-		@time complexity: O(1)
-		"""
-		node = self.getRight()
-		while node.isRealNode():
-			node = node.getLeft()
-
-		return node.getParent()
-
-
-	def goToRoot(self):
-		"""goes up the nodes until it reaches the root
-		
-		@rtype: AVLNode
-		@return: the root of the tree
 		@time complexity: O(log n)
 		"""
-		root = self
-		parent = self.getParent()
-		while parent != None:
-			root = parent
-			parent = parent.getParent()
-		return root
-
+		return self.getSucOrPred(
+			hasChild=lambda x: x.hasRight(),
+			getChild=lambda x: x.getRight(),
+			getOtherChild=lambda x: x.getLeft(),
+		)
+	
+	def getSucOrPred(self, hasChild, getChild, getOtherChild):
+		"""logic for get successor and get predecessor.
+		
+		@type hasChild: lambda AVLNode: bool
+		@param hasChild: check if has left or right child
+		@type hasChild: lambda AVLNode: AVLNode
+		@param hasChild: gets the same that hasChild checks
+		@type hasChild: lambda AVLNode: AVLNode
+		@param hasChild: gets the other child
+		@rtype: AVLNode
+		@returns: successor or predeccesor of the node in the tree.
+		@time complexity: O(log n)
+		"""
+		if hasChild(self):
+			node = getChild(self)
+			while node.isRealNode():
+				node = getOtherChild(node)
+			return node.getParent()
+		else:
+			node = self
+			parent = node.getParent()
+			while parent != None and node is getChild(parent):
+				node = parent
+				parent = parent.getParent()
+			return parent
+				
 
 
 """
@@ -698,7 +639,7 @@ class AVLTreeList(object):
 	@returns: the the value of the i'th item in the list
 	"""
 	def retrieve(self, i):
-		if self.length() < i:
+		if self.length() <= i or i < 0:
 			return None
 
 		node = self.getRoot()
@@ -801,7 +742,7 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def delete(self, i):
-		if i >= self.length():
+		if i >= self.length() or i < 0:
 			return -1
 
 		nodeToDelete = self.retrieveNode(i)
@@ -920,7 +861,7 @@ class AVLTreeList(object):
 		if self.size == 0:
 			return None
 
-		return str(self.firstNode.value)
+		return self.firstNode.value
 
 	"""returns the value of the last item in the list
 
@@ -931,7 +872,7 @@ class AVLTreeList(object):
 		if self.size == 0:
 			return None
 
-		return str(self.lastNode.value)
+		return self.lastNode.value
 
 
 	"""find the first node in the tree. 
@@ -1046,21 +987,21 @@ class AVLTreeList(object):
 		"""searches into the tree as if it was a BST
 		
 		@pre: list is a BST
-		@pre: value != None
+		@post: if value == None, returns the first node
 		@type value: str
 		@param value: value to search for
 		@rtype: AVLNode
 		@return: the node where value is or should be (if not in the search tree)
 		"""
 		if value == None:
-			raise Exception("cannot look for a virtual node")
+			return self.findFirstNode()
 
 		node = self.root
 		while node.isRealNode():
 			node_value = node.getValue()
 			if value == node_value:
 				return node
-			elif value > node_value:
+			elif node_value == None or value > node_value:
 				node = node.getRight()
 			else: # value < node_value
 				node = node.getLeft()
@@ -1157,7 +1098,7 @@ class AVLTreeList(object):
 		else:
 			self.concatGivenIsBigger(lst)
 
-		self.size += lst.size
+		self.size += lst.size + 1
 		self.updatePointers()
 		return absDiff
 
@@ -1174,7 +1115,7 @@ class AVLTreeList(object):
 		originalTree.delete(originalTree.size - 1)
 
 		b = givenTree.getRoot()
-		while b.getHeight() > originalTree.getRoot().getHeight():
+		while b.getHeight() > originalTree.root.getHeight():
 			b = b.getLeft()
 		
 
@@ -1218,7 +1159,7 @@ class AVLTreeList(object):
 		givenTree.delete(0)
 		
 		b = self.getRoot()
-		while b.getHeight() > givenTree.getRoot().getHeight():
+		while b.getHeight() > givenTree.root.getHeight():
 			b = b.getRight()
 		
 		# if b is not the root of originalTree
@@ -1256,7 +1197,7 @@ class AVLTreeList(object):
 	@returns: the first index that contains val, -1 if not found.
 	"""
 	def search(self, val):
-		current = self.getRoot()
+		current = self.root
 		stack = [] 
 		result = []
 		
@@ -1329,3 +1270,6 @@ class AVLTreeList(object):
 
 			# update lastNode
 			self.lastNode = self.findLastNode()
+
+	def append(self, value):#TODO delete before submission
+		self.insert(self.length(), value)
