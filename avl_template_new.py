@@ -951,25 +951,29 @@ class AVLTreeList(object):
 	@returns: a list of strings representing the data structure
 	"""
 	def listToArray(self):
-		if not self.getRoot() or not self.root.isRealNode():
+		if self.size == 0:
 			return []
 
-		return self.listToArrayRec(self.root)
+		current = self.getRoot()
+		stack = [] 
+		result = [0] * self.size
+		i = 0
+		
+		while True:
+			if current.isRealNode():
+				stack.append(current)
+				current = current.getLeft()
 
-	"""recursive helper function for listToArray 
-
-	@rtype: list
-	@returns: a list of strings representing the data structure
-	"""
-	def listToArrayRec(self, root):
-		if not root or not root.isRealNode():
-			return []
-
-		leftList = self.listToArrayRec(root.getLeft())
-		rightList = self.listToArrayRec(root.getRight())
-
-		return leftList + [root.getValue()] + rightList
+			elif(stack):
+				current = stack.pop()
+				result[i] = current.getValue()
+				current = current.getRight()
+				i += 1
 	
+			else:
+				break
+		
+		return result
 
 	@staticmethod
 	def arrayToList(arr):
@@ -1238,28 +1242,13 @@ class AVLTreeList(object):
 	@returns: the first index that contains val, -1 if not found.
 	"""
 	def search(self, val):
-		current = self.getRoot()
-		stack = [] 
-		result = []
+		arr = self.listToArray()
 		
-		while True:
-			if current.isRealNode():
-				stack.append(current)
-				current = current.getLeft()
-
-			elif(stack):
-				current = stack.pop()
-				result.append(current)
-				current = current.getRight()
-	
-			else:
-				break
+		for i in range (len(arr)):
+			if arr[i] == val:
+				return i
 		
-		for node in result:
-			if node.value == val:
-				return node.getRank() - 1
-			else:
-				return -1
+		return -1
 
 
 	"""returns the root of the tree representing the list
