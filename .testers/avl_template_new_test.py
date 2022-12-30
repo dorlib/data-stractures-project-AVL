@@ -1,5 +1,6 @@
 import avl_template_new as avl
 import unittest
+import random
 
 class Test_AVLNode(unittest.TestCase):
     def setUp(self):
@@ -12,8 +13,35 @@ class Test_AVLNode(unittest.TestCase):
         self.b.setParent(self.c) #    (b)↲ ↳(d)
         self.d.setParent(self.c) # (a)↲
 
+    def test_successor(self):
+        assert self.a.getSuccessor() is self.b
+        assert self.d.getSuccessor() == None
+
+        self.e = avl.AVLNode("e",parent=self.b)
+        self.b.setRight(self.e)
+        assert self.e.getSuccessor() is self.c
+        
+        self.f = avl.AVLNode("f",parent=self.e)
+        self.e.setRight(self.f)
+        assert self.f.getSuccessor() is self.c
+        assert self.e.getSuccessor() is self.f
+
+    def test_predecessor(self):
+        assert self.b.getPredecessor() is self.a
+        assert self.a.getPredecessor() == None
+
+        self.e = avl.AVLNode("e",parent=self.d)
+        self.d.setLeft(self.e)
+        assert self.e.getPredecessor() is self.c
+
+        self.f = avl.AVLNode("f",parent=self.e)
+        self.e.setLeft(self.f)
+        assert self.f.getPredecessor() is self.c, self.f.getPredecessor()
+        assert self.e.getPredecessor() is self.f
+
     def test_attributes_override(self):
         node = avl.AVLNode.virtualNode()
+        node.value = None
         assert type(node.right) == avl.AVLNode # it passed through __getattr__
         
         child = avl.AVLNode.virtualNode(node)
@@ -46,22 +74,10 @@ class Test_AVLNode(unittest.TestCase):
         assert self.c.getHeight() == 2, "height is incorrect"
         assert self.c.getSize() == 4, "size is incorrect"
     
-    def test_deep_heights(self):
-        self.a.setHeight(0)
-        self.b.setHeight(0)
-        self.c.setHeight(0)
-        self.d.setHeight(0)
-        
-        self.c.deepHeights()
-        assert self.a.getHeight() == 0, f"a error"
-        assert self.b.getHeight() == 1, f"b error"
-        assert self.c.getHeight() == 2, f"c error"
-        assert self.d.getHeight() == 0, f"d error"
-
     def test_getters(self):
         node = avl.AVLNode.virtualNode() # has None for children
-        assert type(node.getLeft()) == avl.AVLNode
-        assert type(node.getRight()) == avl.AVLNode
+        assert node.getLeft() == None
+        assert node.getRight() == None
 
     def test_rebalance_after_deletion(self):
         # delete (d)
@@ -101,21 +117,11 @@ class Test_AVLNode(unittest.TestCase):
         assert (not self.b.getRight().isRealNode()) and (not self.b.getLeft().isRealNode()), \
                 f"a.left = {self.b.getLeft()}, a.right = {self.b.getRight()}"
     
-    def test_copy(self):
-        copy = self.c.copyForSort()
-        origin = self.c
-
-        def rec_assert_copy(copy, origin):
-            assert copy is not origin, f"same instance {copy}, {origin}"
-            assert copy.value == origin.value, f"different value {copy}, {origin}"
-            if copy.isRealNode():
-                rec_assert_copy(copy.right, origin.right)
-                rec_assert_copy(copy.left, origin.left)
-    
-        rec_assert_copy(copy, origin)
-    
 
 class Test_AVLTreeList(unittest.TestCase):
+    def setUp(self):
+        self.LETTERS = [None]+list("QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890")
+
     def test_insertion(self):
         self.lst = avl.AVLTreeList()
         for i in range(10):
@@ -170,6 +176,39 @@ class Test_AVLTreeList(unittest.TestCase):
         # [a,b,b,c,d,e]
         assert sorted.retrieve(1) == fst_b
         assert sorted.retrieve(2) == scnd_b
+    
+    def test_many_inserts_and_deletes(self):
+        for i in range(1000):
+            lst = avl.AVLTreeList()
+            arr = []
+            for j in range(15):
+                l = lst.length()
+                index = 0 if l <= 0 else random.randint(0, l)
+                value = random.choice(self.LETTERS)
+                lst.insert(index, value)
+                arr.insert(index, value)
+            
+            assert lst.listToArray() == arr, lst.listToArray()
+
+            # measure deletions
+            for j in range(15):
+                l = lst.length()-1
+                index = 0 if l <= 0 else random.randint(0, l)
+                lst.delete(index)
+                assert lst.size == lst.root.size
+            
+            assert lst.root.value == None, lst.root
+
+    def test_sort_with_none(self):
+        arr = list("1362146015234")
+        srted = [None,None] + sorted(arr)
+
+        arr.insert(5, None)
+        arr.insert(7,None)
+        lst = avl.AVLTreeList.arrayToList(arr)
+        lst = lst.sort()
+        lst_arr = lst.listToArray()
+        assert lst_arr == srted, f"{lst_arr}\n{srted}"
 
 if __name__ == "__main__":
     unittest.main()
