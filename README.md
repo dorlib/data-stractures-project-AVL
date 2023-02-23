@@ -3,6 +3,8 @@
 This is the first programming project in data structures course. </br>
 In this project we will implement an ADT of a List while using an AVL tree. </br>
 
+#### Grade: 100
+
 - [AVL Node class](#AVL-Node-Class)
     - [functions & time complexity table](#AVLNode-functions-&-time-complexity)
 - [AVL Tree List class](#AVL-Tree-List-Class)
